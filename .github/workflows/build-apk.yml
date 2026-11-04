@@ -1,34 +1,78 @@
 name: Build debug APKs
 on:
   workflow_dispatch:
-
+  workflow_run:
+    workflows: ["Sync upstream"]
+    types: [completed]
+permissions:
+  contents: write
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KS_PASS: ${{ secrets.BK_KEYSTORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: custom
+      - name: Work out build tag and skip if already released
+        id: chk
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "tag=build-$SHA" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_run" ] && gh release view "build-$SHA" >/dev/null 2>&1; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Nothing new since build-$SHA, skipping."
+          fi
       - uses: actions/setup-java@v4
+        if: steps.chk.outputs.skip != 'true'
         with:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.chk.outputs.skip != 'true'
       - name: Build phone debug APK
+        if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidApp:assembleDebug --max-workers=2 \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Build TV debug APK
+        if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidTvApp:assembleDebug --max-workers=2 \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: phone-debug-apk
-          path: androidApp/build/outputs/apk/debug/*.apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tv-debug-apk
-          path: androidTvApp/build/outputs/apk/debug/*.apk
+      - name: Sign with the permanent BK key
+        if: steps.chk.outputs.skip != 'true'
+        run: |
+          echo "${{ secrets.BK_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/bk.jks"
+          AS=$(ls $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)
+          mkdir out
+          cp androidApp/build/outputs/apk/debug/*.apk out/BK-phone.apk
+          cp androidTvApp/build/outputs/apk/debug/*.apk out/BK-tv.apk
+          for f in out/BK-phone.apk out/BK-tv.apk; do
+            $AS sign --ks "$RUNNER_TEMP/bk.jks" --ks-key-alias bk --ks-pass env:KS_PASS --key-pass env:KS_PASS "$f"
+            $AS verify "$f"
+          done
+      - name: Publish release
+        if: steps.chk.outputs.skip != 'true'
+        run: |
+          TAG=${{ steps.chk.outputs.tag }}
+          gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
+            --title "BK build ${{ steps.chk.outputs.sha }}" \
+            --notes "Automatic build of the custom branch at ${{ steps.chk.outputs.sha }}." \
+            --target custom --latest
+      - name: Post to Discord
+        if: steps.chk.outputs.skip != 'true'
+        env:
+          HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            MSG="New BK build ${{ steps.chk.outputs.sha }} is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
+            curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
+          fi
