@@ -14,8 +14,16 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build phone and TV debug APKs
-        run: ./gradlew :androidApp:assembleDebug :androidTvApp:assembleDebug
+      - name: Build phone debug APK
+        run: |
+          ./gradlew :androidApp:assembleDebug --max-workers=2 \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
+            -Pkotlin.daemon.jvmargs="-Xmx4g"
+      - name: Build TV debug APK
+        run: |
+          ./gradlew :androidTvApp:assembleDebug --max-workers=2 \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
+            -Pkotlin.daemon.jvmargs="-Xmx4g"
       - uses: actions/upload-artifact@v4
         with:
           name: phone-debug-apk
