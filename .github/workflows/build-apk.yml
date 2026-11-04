@@ -1,6 +1,12 @@
-name: Build debug APKs
+name: Build APKs
 on:
   workflow_dispatch:
+    inputs:
+      variant:
+        description: "release (small, fast) or debug (fallback)"
+        type: choice
+        options: [release, debug]
+        default: release
   workflow_run:
     workflows: ["Sync upstream"]
     types: [completed]
@@ -13,6 +19,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       KS_PASS: ${{ secrets.BK_KEYSTORE_PASSWORD }}
+      VARIANT: ${{ inputs.variant || 'release' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,17 +45,17 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
         if: steps.chk.outputs.skip != 'true'
-      - name: Build phone debug APK
+      - name: Build phone APK
         if: steps.chk.outputs.skip != 'true'
         run: |
-          ./gradlew :androidApp:assembleDebug --max-workers=2 \
+          ./gradlew :androidApp:assemble${VARIANT^} --max-workers=2 \
             -PsiloVersionName=1.0.1 -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
-      - name: Build TV debug APK
+      - name: Build TV APK
         if: steps.chk.outputs.skip != 'true'
         run: |
-          ./gradlew :androidTvApp:assembleDebug --max-workers=2 \
+          ./gradlew :androidTvApp:assemble${VARIANT^} --max-workers=2 \
             -PsiloVersionName=1.0.1 -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
@@ -58,8 +65,8 @@ jobs:
           echo "${{ secrets.BK_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/bk.jks"
           AS=$(ls $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)
           mkdir out
-          cp "$(find androidApp/build/outputs/apk/debug -name '*universal*.apk' | head -1)" out/BK-phone.apk
-          cp "$(find androidTvApp/build/outputs/apk/debug -name '*universal*.apk' | head -1)" out/BK-tv.apk
+          cp "$(find androidApp/build/outputs/apk/$VARIANT -name '*universal*.apk' | head -1)" out/BK-phone.apk
+          cp "$(find androidTvApp/build/outputs/apk/$VARIANT -name '*universal*.apk' | head -1)" out/BK-tv.apk
           for f in out/BK-phone.apk out/BK-tv.apk; do
             $AS sign --ks "$RUNNER_TEMP/bk.jks" --ks-key-alias bk --ks-pass env:KS_PASS --key-pass env:KS_PASS "$f"
             $AS verify "$f"
@@ -71,7 +78,7 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
             --title "BK build ${{ steps.chk.outputs.sha }}" \
-            --notes "Automatic build of the custom branch at ${{ steps.chk.outputs.sha }} (version 1.0.1, build ${{ steps.chk.outputs.build }})." \
+            --notes "Automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (version 1.0.1, build ${{ steps.chk.outputs.build }})." \
             --target custom --latest
       - name: Post to Discord
         if: steps.chk.outputs.skip != 'true'
@@ -79,6 +86,6 @@ jobs:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           if [ -n "$HOOK" ]; then
-            MSG="New BK build ${{ steps.chk.outputs.sha }} (v1.0.1 build ${{ steps.chk.outputs.build }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
+            MSG="New BK $VARIANT build ${{ steps.chk.outputs.sha }} (v1.0.1 build ${{ steps.chk.outputs.build }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
             curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
           fi
