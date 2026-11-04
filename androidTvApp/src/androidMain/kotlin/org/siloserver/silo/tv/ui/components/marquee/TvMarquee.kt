@@ -197,10 +197,10 @@ fun TvMarqueeScreen(
         Column(Modifier.fillMaxSize().padding(horizontal = 45.dp, vertical = 30.dp)) {
             Row(Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(R.drawable.silo_wordmark),
-                    contentDescription = "Silo",
+                    painter = painterResource(R.drawable.bk_wordmark_bar),
+                    contentDescription = "BK",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.width(75.dp),
+                    modifier = Modifier.height(32.dp).width(183.dp),
                 )
                 Spacer(Modifier.weight(1f))
                 accessory()

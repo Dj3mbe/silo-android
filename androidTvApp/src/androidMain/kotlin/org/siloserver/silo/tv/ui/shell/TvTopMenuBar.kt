@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -725,19 +726,30 @@ private fun TvTopMenuClock() {
 /** The Silo brand lockup image, sized to the bar. */
 @Composable
 private fun TvSiloWordmark() {
-    Image(
-        painter = painterResource(id = R.drawable.silo_wordmark),
-        contentDescription = "Silo",
-        contentScale = ContentScale.Fit,
+    val shape = RoundedCornerShape(percent = 50)
+    Box(
         modifier = Modifier
-            .height(TvSiloWordmarkHeight)
-            .width(TvSiloWordmarkHeight * TvSiloWordmarkAspect),
-    )
+            .height(TvSkyline.tabPillHeight)
+            .background(Color.Black.copy(alpha = 0.72f), shape)
+            .background(ChromeSelectedFill, shape)
+            .border(1.dp, Color.White.copy(alpha = 0.40f), shape)
+            .padding(horizontal = 14.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.bk_wordmark_bar),
+            contentDescription = "BK",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxHeight()
+                .aspectRatio(TvSiloWordmarkAspect),
+        )
+    }
 }
 
 /** Brand lockup height inside the 32dp bar; the PNG is 764×400. */
-private val TvSiloWordmarkHeight = 26.dp
-private const val TvSiloWordmarkAspect = 764f / 400f
+private val TvSiloWordmarkHeight = 30.dp
+private const val TvSiloWordmarkAspect = 2200f / 384f
 
 /**
  * A center-cluster type tab with inverted-capsule chrome (§5.1):
