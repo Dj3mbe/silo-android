@@ -245,7 +245,7 @@ class MainTvActivity : ComponentActivity() {
                                 // full-bleed (full-bleed rendered the logo 4x too
                                 // large; QA 2026-07-08).
                                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                                    val videoWidth = minOf(maxWidth * 0.25f, 220.dp)
+                                    val videoWidth = minOf(maxWidth * 0.4f, 440.dp)
                                     StartupSplashVideo(
                                         modifier = Modifier
                                             .align(Alignment.Center)

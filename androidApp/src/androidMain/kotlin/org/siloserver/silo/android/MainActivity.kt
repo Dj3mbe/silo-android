@@ -213,7 +213,7 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxSize()
                                 .background(Color.Black),
                         ) {
-                            val videoWidth = minOf(maxWidth * 0.6f, 320.dp)
+                            val videoWidth = minOf(maxWidth * 0.85f, 560.dp)
                             StartupSplashVideo(
                                 modifier = Modifier
                                     .align(Alignment.Center)
