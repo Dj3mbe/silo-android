@@ -1,0 +1,26 @@
+name: Build debug APKs
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: custom
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build phone and TV debug APKs
+        run: ./gradlew :androidApp:assembleDebug :androidTvApp:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone-debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tv-debug-apk
+          path: androidTvApp/build/outputs/apk/debug/*.apk
