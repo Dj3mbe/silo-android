@@ -1,0 +1,21 @@
+name: Apply BK assets
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: custom
+      - name: Unpack images into place and clean up strays
+        run: |
+          unzip -o bk-upload-for-github.zip
+          rm -f bk-upload-for-github.zip ./colors.xml ./strings.xml ./silo_wordmark.png ./tv_banner.png ./ic_launcher*.png
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Apply BK icons, banner and wordmark"
+          git push origin custom
