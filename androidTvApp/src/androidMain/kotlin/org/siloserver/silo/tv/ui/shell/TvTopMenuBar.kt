@@ -702,9 +702,9 @@ private fun TvTopMenuClock() {
             .height(TvSkyline.tabPillHeight)
             // A dark base under the usual capsule fill keeps the clock readable
             // over bright hero artwork, not just over the dark background.
-            .background(Color.Black.copy(alpha = 0.45f), shape)
+            .background(Color.Black.copy(alpha = 0.72f), shape)
             .background(ChromeSelectedFill, shape)
-            .border(1.dp, Color.White.copy(alpha = 0.22f), shape)
+            .border(1.dp, Color.White.copy(alpha = 0.40f), shape)
             .padding(
                 horizontal = TvSkyline.tabPaddingHorizontal,
                 vertical = TvSkyline.tabPaddingVertical,
