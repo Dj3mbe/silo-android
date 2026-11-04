@@ -200,7 +200,7 @@ fun TvMarqueeScreen(
                     painter = painterResource(R.drawable.bk_logo_pill),
                     contentDescription = "BK",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.height(32.dp).width(181.dp),
+                    modifier = Modifier.height(32.dp).width(171.dp),
                 )
                 Spacer(Modifier.weight(1f))
                 accessory()
