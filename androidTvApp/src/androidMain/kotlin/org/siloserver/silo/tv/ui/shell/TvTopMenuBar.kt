@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -649,6 +650,7 @@ fun TvTopMenuBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(TvSkyline.barTrailingSpacing),
         ) {
+            TvTopMenuClock()
             TvTopMenuProfileButton(
                 accountState = accountState,
                 isFocused = focusedButton == TvTopMenuFocus.Profile,
@@ -674,6 +676,33 @@ data class TvAccountState(
     /** Active server display name, shown in the dropdown header. */
     val serverName: String = "",
 )
+
+/**
+ * BK: current time in the top bar, left of the profile avatar. Follows the
+ * device's 12/24-hour setting and refreshes on the minute.
+ */
+@Composable
+private fun TvTopMenuClock() {
+    val context = LocalContext.current
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            now = System.currentTimeMillis()
+            delay((60_000L - now % 60_000L).coerceAtLeast(1_000L))
+        }
+    }
+    val text = remember(now) {
+        android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date(now))
+    }
+    Text(
+        text = text,
+        style = navRailLabel,
+        fontSize = TvSkyline.tabLabelSize,
+        fontWeight = FontWeight.Medium,
+        color = SiloOnSurface.copy(alpha = 0.85f),
+        maxLines = 1,
+    )
+}
 
 /** The Silo brand lockup image, sized to the bar. */
 @Composable
