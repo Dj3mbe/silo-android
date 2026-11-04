@@ -733,11 +733,11 @@ private fun TvSiloWordmark() {
             .background(Color.Black.copy(alpha = 0.72f), shape)
             .background(ChromeSelectedFill, shape)
             .border(1.dp, Color.White.copy(alpha = 0.40f), shape)
-            .padding(horizontal = 14.dp, vertical = 4.dp),
+            .padding(horizontal = 11.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
         Image(
-            painter = painterResource(id = R.drawable.bk_logo_pill),
+            painter = painterResource(id = R.drawable.bk_crown_pill),
             contentDescription = "BK",
             contentScale = ContentScale.Fit,
             modifier = Modifier
@@ -749,7 +749,7 @@ private fun TvSiloWordmark() {
 
 /** Brand lockup height inside the 32dp bar; the PNG is 764×400. */
 private val TvSiloWordmarkHeight = 30.dp
-private const val TvSiloWordmarkAspect = 2174f / 384f
+private const val TvSiloWordmarkAspect = 359f / 290f
 
 /**
  * A center-cluster type tab with inverted-capsule chrome (§5.1):
