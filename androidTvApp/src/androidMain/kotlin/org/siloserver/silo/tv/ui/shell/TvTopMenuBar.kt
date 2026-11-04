@@ -678,8 +678,10 @@ data class TvAccountState(
 )
 
 /**
- * BK: current time in the top bar, left of the profile avatar. Follows the
- * device's 12/24-hour setting and refreshes on the minute.
+ * BK: current time in a capsule that matches the selected tab (same shape,
+ * height, fill, border and text color), left of the profile avatar. Display
+ * only, so it never takes focus. Follows the device's 12/24-hour setting and
+ * refreshes on the minute.
  */
 @Composable
 private fun TvTopMenuClock() {
@@ -694,14 +696,27 @@ private fun TvTopMenuClock() {
     val text = remember(now) {
         android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date(now))
     }
-    Text(
-        text = text,
-        style = navRailLabel,
-        fontSize = TvSkyline.tabLabelSize,
-        fontWeight = FontWeight.Medium,
-        color = SiloOnSurface.copy(alpha = 0.85f),
-        maxLines = 1,
-    )
+    val shape = RoundedCornerShape(percent = 50)
+    Box(
+        modifier = Modifier
+            .height(TvSkyline.tabPillHeight)
+            .background(ChromeSelectedFill, shape)
+            .border(1.dp, ChromeSelectedBorder, shape)
+            .padding(
+                horizontal = TvSkyline.tabPaddingHorizontal,
+                vertical = TvSkyline.tabPaddingVertical,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = navRailLabel,
+            fontSize = TvSkyline.tabLabelSize,
+            fontWeight = FontWeight.SemiBold,
+            color = SiloOnSurface,
+            maxLines = 1,
+        )
+    }
 }
 
 /** The Silo brand lockup image, sized to the bar. */
