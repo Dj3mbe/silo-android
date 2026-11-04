@@ -17,12 +17,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: custom
-      - name: Work out build tag and skip if already released
+      - name: Work out build tag and version, skip if already released
         id: chk
         run: |
           SHA=$(git rev-parse --short HEAD)
           echo "sha=$SHA" >> $GITHUB_OUTPUT
           echo "tag=build-$SHA" >> $GITHUB_OUTPUT
+          BUILD=${{ github.run_number }}
+          if [ "$BUILD" -gt 999 ]; then BUILD=999; fi
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+          echo "code=$((110001000 + BUILD))" >> $GITHUB_OUTPUT
           if [ "${{ github.event_name }}" = "workflow_run" ] && gh release view "build-$SHA" >/dev/null 2>&1; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Nothing new since build-$SHA, skipping."
@@ -38,12 +42,14 @@ jobs:
         if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidApp:assembleDebug --max-workers=2 \
+            -PsiloVersionName=1.0.1 -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Build TV debug APK
         if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidTvApp:assembleDebug --max-workers=2 \
+            -PsiloVersionName=1.0.1 -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Sign with the permanent BK key
@@ -65,7 +71,7 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
             --title "BK build ${{ steps.chk.outputs.sha }}" \
-            --notes "Automatic build of the custom branch at ${{ steps.chk.outputs.sha }}." \
+            --notes "Automatic build of the custom branch at ${{ steps.chk.outputs.sha }} (version 1.0.1, build ${{ steps.chk.outputs.build }})." \
             --target custom --latest
       - name: Post to Discord
         if: steps.chk.outputs.skip != 'true'
@@ -73,6 +79,6 @@ jobs:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           if [ -n "$HOOK" ]; then
-            MSG="New BK build ${{ steps.chk.outputs.sha }} is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
+            MSG="New BK build ${{ steps.chk.outputs.sha }} (v1.0.1 build ${{ steps.chk.outputs.build }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
             curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
           fi
