@@ -197,10 +197,10 @@ fun TvMarqueeScreen(
         Column(Modifier.fillMaxSize().padding(horizontal = 45.dp, vertical = 30.dp)) {
             Row(Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(R.drawable.bk_wordmark_bar),
+                    painter = painterResource(R.drawable.bk_logo_pill),
                     contentDescription = "BK",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.height(32.dp).width(183.dp),
+                    modifier = Modifier.height(32.dp).width(181.dp),
                 )
                 Spacer(Modifier.weight(1f))
                 accessory()
