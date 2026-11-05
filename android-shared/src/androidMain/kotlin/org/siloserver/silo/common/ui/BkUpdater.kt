@@ -2,13 +2,16 @@ package org.siloserver.silo.common.ui
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
+import android.os.Bundle
 import android.widget.Toast
 import org.json.JSONObject
+import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -25,27 +28,88 @@ object BkUpdater {
     private const val REPO = "Dj3mbe/silo-android"
     private const val PREFS = "bk_updater"
     private const val KEY_DECLINED_AT = "declined_at"
+    private const val KEY_CHECKED_AT = "checked_at"
     private const val QUIET_AFTER_DECLINE_MS = 12L * 60L * 60L * 1000L
+    private const val CHECK_INTERVAL_MS = 12L * 60L * 60L * 1000L
 
     @Volatile
-    private var checkedThisProcess = false
+    private var callbacksRegistered = false
 
-    /** Call once from the main Activity's onCreate. Safe to call repeatedly. */
+    @Volatile
+    private var promptShowing = false
+
+    @Volatile
+    private var checkInFlight = false
+
+    @Volatile
+    private var firstCheckDone = false
+
+    @Volatile
+    private var mainActivity: WeakReference<Activity>? = null
+
+    @Volatile
+    private var currentBuildNumber = 0
+
+    @Volatile
+    private var apkFileName = ""
+
+    /**
+     * Call from the main Activity's onCreate. Checks now, and again whenever the
+     * app returns to the foreground (at most once every 12 hours), so devices that
+     * never fully restart the app, like a Fire TV Stick, still get prompted.
+     */
     fun checkOnLaunch(activity: Activity, currentBuild: String, apkName: String) {
-        if (checkedThisProcess) return
-        checkedThisProcess = true
         val current = currentBuild.toIntOrNull() ?: return
         // Unstamped local builds report 0; never prompt those.
         if (current <= 0) return
+        currentBuildNumber = current
+        apkFileName = apkName
+        mainActivity = WeakReference(activity)
+        if (!callbacksRegistered) {
+            callbacksRegistered = true
+            activity.application.registerActivityLifecycleCallbacks(
+                object : Application.ActivityLifecycleCallbacks {
+                    override fun onActivityResumed(a: Activity) {
+                        if (a === mainActivity?.get()) maybeCheck(a)
+                    }
+
+                    override fun onActivityCreated(a: Activity, savedInstanceState: Bundle?) {}
+                    override fun onActivityStarted(a: Activity) {}
+                    override fun onActivityPaused(a: Activity) {}
+                    override fun onActivityStopped(a: Activity) {}
+                    override fun onActivitySaveInstanceState(a: Activity, outState: Bundle) {}
+                    override fun onActivityDestroyed(a: Activity) {}
+                },
+            )
+        }
+        maybeCheck(activity)
+    }
+
+    private fun maybeCheck(activity: Activity) {
+        if (promptShowing || checkInFlight) return
         val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val declinedAt = prefs.getLong(KEY_DECLINED_AT, 0L)
-        if (System.currentTimeMillis() - declinedAt < QUIET_AFTER_DECLINE_MS) return
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong(KEY_DECLINED_AT, 0L) < QUIET_AFTER_DECLINE_MS) return
+        // The first check after the app starts always runs; later checks (the app
+        // coming back to the front) wait for the interval.
+        val forced = !firstCheckDone
+        if (!forced && now - prefs.getLong(KEY_CHECKED_AT, 0L) < CHECK_INTERVAL_MS) return
+        firstCheckDone = true
+        checkInFlight = true
+        val current = currentBuildNumber
+        val apkName = apkFileName
 
         Thread {
             val latest = fetchLatestBuild()
+            checkInFlight = false
+            // Only a successful answer counts as a check, so a failure retries
+            // the next time the app is opened.
+            if (latest != null) {
+                prefs.edit().putLong(KEY_CHECKED_AT, System.currentTimeMillis()).apply()
+            }
             if (latest != null && latest > current) {
                 activity.runOnUiThread {
-                    if (!activity.isFinishing && !activity.isDestroyed) {
+                    if (!activity.isFinishing && !activity.isDestroyed && !promptShowing) {
                         showPrompt(activity, latest, apkName)
                     }
                 }
@@ -72,6 +136,7 @@ object BkUpdater {
 
     private fun showPrompt(activity: Activity, latest: Int, apkName: String) {
         val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        promptShowing = true
         AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle("Update available")
             .setMessage("A newer version of BK is ready (build $latest). Update now?")
@@ -82,6 +147,7 @@ object BkUpdater {
             .setOnCancelListener {
                 prefs.edit().putLong(KEY_DECLINED_AT, System.currentTimeMillis()).apply()
             }
+            .setOnDismissListener { promptShowing = false }
             .show()
     }
 
