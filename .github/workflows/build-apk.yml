@@ -33,7 +33,15 @@ jobs:
           BUILD=${{ github.run_number }}
           if [ "$BUILD" -gt 999 ]; then BUILD=999; fi
           echo "build=$BUILD" >> $GITHUB_OUTPUT
-          echo "code=$((110001000 + BUILD))" >> $GITHUB_OUTPUT
+          # Follow Silo's latest official release (v<major>.<minor>.<patch>+<n>).
+          VER=$(git ls-remote --tags https://github.com/Silo-Server/silo-android.git 'refs/tags/v*' \
+            | awk '{print $2}' | sed 's|refs/tags/v||; s|\^{}$||' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$' | sed 's|+.*||' | sort -uV | tail -1 || true)
+          if [ -z "$VER" ]; then VER=1.0.1; fi
+          IFS=. read -r MAJ MIN PAT <<< "$VER"
+          echo "ver=$VER" >> $GITHUB_OUTPUT
+          echo "code=$((100000000 + (MAJ*10000 + MIN*100 + PAT)*1000 + BUILD))" >> $GITHUB_OUTPUT
+          echo "Silo version $VER, build $BUILD"
           if [ "${{ github.event_name }}" = "workflow_run" ] && gh release view "build-$SHA" >/dev/null 2>&1; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Nothing new since build-$SHA, skipping."
@@ -49,14 +57,14 @@ jobs:
         if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidApp:assemble${VARIANT^} --max-workers=2 \
-            -PsiloVersionName=1.0.1 -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
+            -PsiloVersionName=${{ steps.chk.outputs.ver }} -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Build TV APK
         if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidTvApp:assemble${VARIANT^} --max-workers=2 \
-            -PsiloVersionName=1.0.1 -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
+            -PsiloVersionName=${{ steps.chk.outputs.ver }} -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Sign with the permanent BK key
@@ -78,7 +86,7 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
             --title "BK build ${{ steps.chk.outputs.sha }}" \
-            --notes "Automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (version 1.0.1, build ${{ steps.chk.outputs.build }})." \
+            --notes "Automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (version ${{ steps.chk.outputs.ver }}, build ${{ steps.chk.outputs.build }})." \
             --target custom --latest
       - name: Post to Discord
         if: steps.chk.outputs.skip != 'true'
@@ -86,6 +94,6 @@ jobs:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           if [ -n "$HOOK" ]; then
-            MSG="New BK $VARIANT build ${{ steps.chk.outputs.sha }} (v1.0.1 build ${{ steps.chk.outputs.build }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
+            MSG="New BK $VARIANT build ${{ steps.chk.outputs.sha }} (v${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.build }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
             curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
           fi
