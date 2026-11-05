@@ -7,8 +7,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.widget.Toast
 import org.json.JSONObject
 import java.lang.ref.WeakReference
@@ -53,6 +57,28 @@ object BkUpdater {
 
     @Volatile
     private var apkFileName = ""
+
+    /** Set by [BkUpdateReceiver] when Android reports back on an install. */
+    @Volatile
+    var installResultSeen = false
+
+    /**
+     * Opens Android's install confirmation from the app's own screen when we can
+     * (more reliable on Fire TV than starting it from the background receiver).
+     */
+    fun launchConfirm(context: Context, confirm: Intent) {
+        val screen = mainActivity?.get()
+        try {
+            if (screen != null && !screen.isFinishing && !screen.isDestroyed) {
+                screen.startActivity(confirm)
+            } else {
+                confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(confirm)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open the installer.", Toast.LENGTH_LONG).show()
+        }
+    }
 
     /**
      * Call from the main Activity's onCreate. Checks now, and again whenever the
@@ -102,24 +128,26 @@ object BkUpdater {
         val apkName = apkFileName
 
         Thread {
-            val latest = fetchLatestBuild()
+            val latest = fetchLatest()
             checkInFlight = false
             // Only a successful answer counts as a check, so a failure retries
             // the next time the app is opened.
             if (latest != null) {
                 prefs.edit().putLong(KEY_CHECKED_AT, System.currentTimeMillis()).apply()
             }
-            if (latest != null && latest > current) {
+            if (latest != null && latest.code > current) {
                 activity.runOnUiThread {
                     if (!activity.isFinishing && !activity.isDestroyed && !promptShowing) {
-                        showPrompt(activity, latest, apkName)
+                        showPrompt(activity, latest.label, apkName)
                     }
                 }
             }
         }.start()
     }
 
-    private fun fetchLatestBuild(): Int? {
+    private class LatestRelease(val code: Int, val label: String)
+
+    private fun fetchLatest(): LatestRelease? {
         return try {
             val conn = URL("https://api.github.com/repos/$REPO/releases/latest")
                 .openConnection() as HttpURLConnection
@@ -129,19 +157,28 @@ object BkUpdater {
             conn.setRequestProperty("User-Agent", "BK-Updater")
             if (conn.responseCode != 200) return null
             val body = conn.inputStream.bufferedReader().use { it.readText() }
-            val notes = JSONObject(body).optString("body", "")
-            Regex("code (\\d+)").find(notes)?.groupValues?.get(1)?.toIntOrNull()
+            val json = JSONObject(body)
+            val notes = json.optString("body", "")
+            val code = Regex("code (\\d+)").find(notes)?.groupValues?.get(1)?.toIntOrNull()
+                ?: return null
+            LatestRelease(code, json.optString("name", "").trim())
         } catch (e: Exception) {
             null
         }
     }
 
-    private fun showPrompt(activity: Activity, latest: Int, apkName: String) {
+    private fun showPrompt(activity: Activity, label: String, apkName: String) {
         val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         promptShowing = true
         AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle("Update available")
-            .setMessage("A newer version of BK is ready (build $latest). Update now?")
+            .setMessage(
+                if (label.isBlank()) {
+                    "A newer version of BK is ready. Update now?"
+                } else {
+                    "A newer version of BK is ready ($label). Update now?"
+                },
+            )
             .setPositiveButton("Update now") { _, _ -> startUpdate(activity, apkName) }
             .setNegativeButton("Later") { _, _ ->
                 prefs.edit().putLong(KEY_DECLINED_AT, System.currentTimeMillis()).apply()
@@ -153,7 +190,40 @@ object BkUpdater {
             .show()
     }
 
+    private fun askForInstallPermission(activity: Activity) {
+        AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Allow BK to install updates")
+            .setMessage(
+                "To update, turn on \"Install unknown apps\" for BK. Press Open settings and switch BK on. " +
+                    "If that screen does not open: Settings > My Fire TV > Developer options > " +
+                    "Install unknown apps > BK. Then open the app and press Update now again.",
+            )
+            .setPositiveButton("Open settings") { _, _ ->
+                try {
+                    activity.startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                            Uri.parse("package:" + activity.packageName),
+                        ),
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(
+                        activity,
+                        "Open Settings > My Fire TV > Developer options > Install unknown apps > BK.",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun startUpdate(activity: Activity, apkName: String) {
+        if (Build.VERSION.SDK_INT >= 26 && !activity.packageManager.canRequestPackageInstalls()) {
+            askForInstallPermission(activity)
+            return
+        }
+        installResultSeen = false
         val progress = AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle("Updating BK")
             .setMessage("Downloading... 0%")
@@ -209,7 +279,19 @@ object BkUpdater {
                 } finally {
                     session.close()
                 }
-                activity.runOnUiThread { progress.dismiss() }
+                activity.runOnUiThread {
+                    progress.dismiss()
+                    // If Android never answers, say so instead of failing silently.
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        if (!installResultSeen) {
+                            Toast.makeText(
+                                activity,
+                                "The install did not start. Check Install unknown apps for BK, then try again.",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
+                    }, 25_000L)
+                }
             } catch (e: Exception) {
                 if (sessionId >= 0) {
                     try {
