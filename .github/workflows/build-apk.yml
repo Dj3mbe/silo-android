@@ -33,15 +33,17 @@ jobs:
           BUILD=${{ github.run_number }}
           if [ "$BUILD" -gt 999 ]; then BUILD=999; fi
           echo "build=$BUILD" >> $GITHUB_OUTPUT
-          # Follow Silo's latest official release (v<major>.<minor>.<patch>+<n>).
-          VER=$(git ls-remote --tags https://github.com/Silo-Server/silo-android.git 'refs/tags/v*' \
-            | awk '{print $2}' | sed 's|refs/tags/v||; s|\^{}$||' \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$' | sed 's|+.*||' | sort -uV | tail -1 || true)
-          if [ -z "$VER" ]; then VER=1.0.1; fi
-          IFS=. read -r MAJ MIN PAT <<< "$VER"
+          # Mirror Silo's own numbering: the tester build with the highest build
+          # number, tagged v<major>.<minor>.<patch>-beta.<build> (or older +<build>).
+          TAGS=$(git ls-remote --tags https://github.com/Silo-Server/silo-android.git 'refs/tags/v*' | awk '{print $2}' | sed 's|refs/tags/||; s|\^{}$||' | sort -u || true)
+          read -r SILO_BUILD VER <<< "$(echo "$TAGS" | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-beta\.([0-9]+)$/\2 \1/p; s/^v([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)$/\2 \1/p; s/^v([0-9]+\.[0-9]+\.[0-9]+)-[0-9A-Za-z.]+\+([0-9]+)$/\2 \1/p' | sort -n | tail -1)" || true
+          if [ -z "$VER" ] || [ -z "$SILO_BUILD" ]; then VER=1.0.1; SILO_BUILD=$BUILD; fi
           echo "ver=$VER" >> $GITHUB_OUTPUT
-          echo "code=$((100000000 + (MAJ*10000 + MIN*100 + PAT)*1000 + BUILD))" >> $GITHUB_OUTPUT
-          echo "Silo version $VER, build $BUILD"
+          echo "silobuild=$SILO_BUILD" >> $GITHUB_OUTPUT
+          # Our own always-rising code (the app compares this for updates); it is
+          # deliberately not tied to Silo's version so updates never go backwards.
+          echo "code=$((110001000 + BUILD))" >> $GITHUB_OUTPUT
+          echo "Silo $VER build $SILO_BUILD; BK build $BUILD"
           if [ "${{ github.event_name }}" = "workflow_run" ] && gh release view "build-$SHA" >/dev/null 2>&1; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Nothing new since build-$SHA, skipping."
@@ -57,14 +59,14 @@ jobs:
         if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidApp:assemble${VARIANT^} --max-workers=2 \
-            -PsiloVersionName=${{ steps.chk.outputs.ver }} -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
+            -PsiloVersionName=${{ steps.chk.outputs.ver }} -PsiloBuildNumber=${{ steps.chk.outputs.silobuild }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Build TV APK
         if: steps.chk.outputs.skip != 'true'
         run: |
           ./gradlew :androidTvApp:assemble${VARIANT^} --max-workers=2 \
-            -PsiloVersionName=${{ steps.chk.outputs.ver }} -PsiloBuildNumber=${{ steps.chk.outputs.build }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
+            -PsiloVersionName=${{ steps.chk.outputs.ver }} -PsiloBuildNumber=${{ steps.chk.outputs.silobuild }} -PsiloVersionCode=${{ steps.chk.outputs.code }} \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             -Pkotlin.daemon.jvmargs="-Xmx4g"
       - name: Sign with the permanent BK key
@@ -86,7 +88,7 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
             --title "BK build ${{ steps.chk.outputs.sha }}" \
-            --notes "Automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (version ${{ steps.chk.outputs.ver }}, build ${{ steps.chk.outputs.build }})." \
+            --notes "Automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (build ${{ steps.chk.outputs.build }}; Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}; code ${{ steps.chk.outputs.code }})." \
             --target custom --latest
       - name: Post to Discord
         if: steps.chk.outputs.skip != 'true'
@@ -94,6 +96,6 @@ jobs:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           if [ -n "$HOOK" ]; then
-            MSG="New BK $VARIANT build ${{ steps.chk.outputs.sha }} (v${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.build }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
+            MSG="New BK $VARIANT build ${{ steps.chk.outputs.sha }} (Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
             curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
           fi
