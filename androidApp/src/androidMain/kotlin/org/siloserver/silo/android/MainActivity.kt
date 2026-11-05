@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -215,11 +216,13 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxSize()
                                 .background(Color.Black),
                         ) {
-                            val videoWidth = minOf(maxWidth * 0.85f, 560.dp)
+                            // BK fork: wider than the screen, so the logo stays a good size
+                            // (the video fades to black at its edges, so no box is visible).
+                            val videoWidth = maxWidth * 1.6f
                             StartupSplashVideo(
                                 modifier = Modifier
                                     .align(Alignment.Center)
-                                    .width(videoWidth)
+                                    .requiredWidth(videoWidth)
                                     .aspectRatio(16f / 9f),
                                 backgroundColor = Color.Black,
                                 // iOS parity: video end or 4s, whichever first

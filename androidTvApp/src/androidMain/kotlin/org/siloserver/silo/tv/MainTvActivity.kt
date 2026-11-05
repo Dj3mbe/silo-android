@@ -247,13 +247,11 @@ class MainTvActivity : ComponentActivity() {
                                 // full-bleed (full-bleed rendered the logo 4x too
                                 // large; QA 2026-07-08).
                                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                                    val videoWidth = minOf(maxWidth * 0.4f, 440.dp)
+                                    // BK fork: the splash fills the whole screen (the video
+                                    // fades to black at its own edges, so no box is visible).
                                     StartupSplashVideo(
-                                        modifier = Modifier
-                                            .align(Alignment.Center)
-                                            .width(videoWidth)
-                                            .aspectRatio(16f / 9f),
-                                        resizeMode = StartupSplashResizeMode.Fit,
+                                        modifier = Modifier.fillMaxSize(),
+                                        resizeMode = StartupSplashResizeMode.Crop,
                                         backgroundColor = splashBackground,
                                         // tvOS parity: the splash completes at video end
                                         // or 4s, whichever comes first (StartupSplashView
