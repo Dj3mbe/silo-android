@@ -21,8 +21,9 @@ import java.net.URL
  * Android's PackageInstaller (no storage permission or FileProvider needed);
  * Android then shows its normal install confirmation.
  *
- * Builds are compared by the build number that CI stamps into the app and
- * into each release's notes ("... build N ...").
+ * Builds are compared by BK's own build code, which is in the app's versionCode
+ * and in each release's notes ("... code N ..."). It always rises, whatever
+ * Silo's own version and build numbers do.
  */
 object BkUpdater {
     private const val REPO = "Dj3mbe/silo-android"
@@ -58,10 +59,11 @@ object BkUpdater {
      * app returns to the foreground (at most once every 12 hours), so devices that
      * never fully restart the app, like a Fire TV Stick, still get prompted.
      */
-    fun checkOnLaunch(activity: Activity, currentBuild: String, apkName: String) {
-        val current = currentBuild.toIntOrNull() ?: return
-        // Unstamped local builds report 0; never prompt those.
-        if (current <= 0) return
+    fun checkOnLaunch(activity: Activity, versionCode: Int, apkName: String) {
+        // The app's versionCode is our build code * 2 (+1 on TV); undo that.
+        val current = versionCode / 2
+        // Local, unstamped builds have a tiny code; never prompt those.
+        if (current < 110_000_000) return
         currentBuildNumber = current
         apkFileName = apkName
         mainActivity = WeakReference(activity)
@@ -128,7 +130,7 @@ object BkUpdater {
             if (conn.responseCode != 200) return null
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             val notes = JSONObject(body).optString("body", "")
-            Regex("build (\\d+)").find(notes)?.groupValues?.get(1)?.toIntOrNull()
+            Regex("code (\\d+)").find(notes)?.groupValues?.get(1)?.toIntOrNull()
         } catch (e: Exception) {
             null
         }
