@@ -1,5 +1,6 @@
 package org.siloserver.silo.common.ui
 
+import android.annotation.TargetApi
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.Application
@@ -190,6 +191,7 @@ object BkUpdater {
             .show()
     }
 
+    @TargetApi(Build.VERSION_CODES.O)
     private fun askForInstallPermission(activity: Activity) {
         AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle("Allow BK to install updates")
@@ -200,12 +202,14 @@ object BkUpdater {
             )
             .setPositiveButton("Open settings") { _, _ ->
                 try {
-                    activity.startActivity(
-                        Intent(
-                            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                            Uri.parse("package:" + activity.packageName),
-                        ),
-                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        activity.startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                Uri.parse("package:" + activity.packageName),
+                            ),
+                        )
+                    }
                 } catch (e: Exception) {
                     Toast.makeText(
                         activity,
@@ -219,7 +223,7 @@ object BkUpdater {
     }
 
     private fun startUpdate(activity: Activity, apkName: String) {
-        if (Build.VERSION.SDK_INT >= 26 && !activity.packageManager.canRequestPackageInstalls()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) {
             askForInstallPermission(activity)
             return
         }
