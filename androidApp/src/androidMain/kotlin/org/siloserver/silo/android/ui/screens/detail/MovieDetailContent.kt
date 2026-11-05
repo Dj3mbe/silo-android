@@ -38,6 +38,7 @@ import org.siloserver.silo.android.ui.theme.SiloDetailActionControlActive
 import org.siloserver.silo.android.ui.util.rememberDominantColor
 import org.siloserver.silo.common.cards.LocalEpisodeSpoilerPrefs
 import org.siloserver.silo.common.ui.movieDirectorCredit
+import org.siloserver.silo.common.ui.castAndKeyCrew
 import org.siloserver.silo.model.catalog.EpisodeListItem
 import org.siloserver.silo.model.catalog.ItemDetail
 import org.siloserver.silo.model.catalog.ItemExtra
@@ -328,7 +329,7 @@ fun MovieDetailContent(
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     SectionHeader(title = "Cast & Crew")
                     CastCrewSection(
-                        cast = detail.cast,
+                        cast = remember(detail.cast, detail.crew) { detail.castAndKeyCrew() },
                         onPersonClick = onPersonClick,
                     )
                 }

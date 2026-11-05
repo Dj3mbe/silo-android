@@ -101,6 +101,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.siloserver.silo.model.catalog.seriesHeroBackdrop
 import org.siloserver.silo.common.ui.OnViewerAccessChanged
+import org.siloserver.silo.common.ui.castAndKeyCrew
 import org.siloserver.silo.network.AccessChangeSignals
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -1261,7 +1262,7 @@ private fun TvDetailContent(
                                     .detailBodySectionAnchor(listState, coroutineScope),
                             ) {
                             TvCastCrewSection(
-                                cast = detail.cast,
+                                cast = remember(detail.cast, detail.crew) { detail.castAndKeyCrew() },
                                 horizontalContentPadding = TvDetailHorizontalInset,
                                 firstItemFocusRequester = firstCastFocus,
                                 // Cast is the first body rail only when there is no

@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import org.siloserver.silo.common.ui.castAndKeyCrew
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -466,7 +467,7 @@ fun SeriesDetailContent(
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     SectionHeader(title = "Cast & Crew")
                     CastCrewSection(
-                        cast = detail.cast,
+                        cast = remember(detail.cast, detail.crew) { detail.castAndKeyCrew() },
                         onPersonClick = onPersonClick,
                     )
                 }
