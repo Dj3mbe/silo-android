@@ -82,20 +82,27 @@ jobs:
             $AS verify "$f"
           done
       - name: Publish release
+        id: pub
         if: steps.chk.outputs.skip != 'true'
         run: |
           TAG=${{ steps.chk.outputs.tag }}
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          # Friendly name: the short date (Toronto time) plus v1, v2, v3 for each release that day, e.g. "BK Nov 5 v2".
+          DAY=$(TZ=America/Toronto date '+%b %-d')
+          N=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].name' | grep -c "^BK $DAY v" || true)
+          LABEL="BK $DAY v$((N + 1))"
+          echo "label=$LABEL" >> $GITHUB_OUTPUT
           gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
-            --title "BK build ${{ steps.chk.outputs.sha }}" \
-            --notes "Automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (build ${{ steps.chk.outputs.build }}; Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}; code ${{ steps.chk.outputs.code }})." \
+            --title "$LABEL" \
+            --notes "$LABEL: automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (build ${{ steps.chk.outputs.build }}; Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}; code ${{ steps.chk.outputs.code }})." \
             --target custom --latest
       - name: Post to Discord
         if: steps.chk.outputs.skip != 'true'
         env:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LABEL: ${{ steps.pub.outputs.label }}
         run: |
           if [ -n "$HOOK" ]; then
-            MSG="New BK $VARIANT build ${{ steps.chk.outputs.sha }} (Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}) is ready: https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
+            MSG="New $LABEL is ready (Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}): https://github.com/${{ github.repository }}/releases/tag/${{ steps.chk.outputs.tag }}"
             curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
           fi
