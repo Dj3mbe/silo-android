@@ -1,17 +1,22 @@
 package org.siloserver.silo.android.ui.screens.detail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -19,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.siloserver.silo.android.ui.theme.SiloSecondaryText
+import org.siloserver.silo.common.ui.castGroupLabelBefore
 import org.siloserver.silo.common.ui.components.DeferImagePresentationWhileScrolling
 import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.model.catalog.CastMember
@@ -52,11 +59,17 @@ fun CastCrewSection(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        items(
+        itemsIndexed(
             cast,
-            key = { "${it.name}_${it.character}_${it.order}" },
-            contentType = { "cast-member" },
-        ) { member ->
+            key = { _, member -> "${member.name}_${member.character}_${member.order}" },
+            contentType = { _, _ -> "cast-member" },
+        ) { index, member ->
+            val groupLabel = castGroupLabelBefore(cast, index)
+            Row(verticalAlignment = Alignment.Top) {
+            if (groupLabel != null) {
+                CastGroupDivider(label = groupLabel)
+                Spacer(modifier = Modifier.width(14.dp))
+            }
             CastTile(
                 photoUrl = member.photoUrl,
                 photoThumbhash = member.photoThumbhash,
@@ -64,6 +77,7 @@ fun CastCrewSection(
                 role = member.character,
                 onClick = member.personId?.let { id -> { onPersonClick(id) } },
             )
+            }
         }
     }
     }
@@ -128,5 +142,38 @@ private fun CastTile(
                 )
             }
         }
+    }
+}
+
+/** BK fork: web-style vertical divider with a rotated group label ("WRITERS", "CAST"). */
+@Composable
+private fun CastGroupDivider(label: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Box(
+            modifier = Modifier
+                .width(14.dp)
+                .height(76.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.2.sp,
+                color = SiloSecondaryText,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .wrapContentSize(unbounded = true)
+                    .rotate(-90f),
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .height(120.dp)
+                .background(Color.White.copy(alpha = 0.18f)),
+        )
     }
 }

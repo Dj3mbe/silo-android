@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -53,6 +56,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import org.siloserver.silo.common.ui.castGroupLabelBefore
 import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.model.catalog.CastMember
 import org.siloserver.silo.tv.ui.theme.TvRailScrollBehavior
@@ -165,6 +169,12 @@ fun TvCastCrewSection(
                 key = { idx, member -> "${member.personId ?: member.name}-${member.order}-$idx" },
                 contentType = { _, _ -> "cast-member" },
             ) { index, member ->
+                val groupLabel = castGroupLabelBefore(visibleCast, index)
+                Row(verticalAlignment = Alignment.Top) {
+                if (groupLabel != null) {
+                    TvCastGroupDivider(label = groupLabel, photoSize = photoSize)
+                    Spacer(modifier = Modifier.width(22.dp))
+                }
                 TvCastCard(
                     member = member,
                     photoSize = photoSize,
@@ -195,6 +205,7 @@ fun TvCastCrewSection(
                         },
                     onClick = { onCastMemberClick(index, member) },
                 )
+                }
             }
         }
         }
@@ -286,5 +297,38 @@ internal fun TvCastCard(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+}
+
+/** BK fork: web-style vertical divider with a rotated group label ("WRITERS", "CAST"). */
+@Composable
+internal fun TvCastGroupDivider(label: String, photoSize: Dp) {
+    Row(verticalAlignment = Alignment.Top) {
+        Box(
+            modifier = Modifier
+                .width(16.dp)
+                .height(photoSize),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.5.sp,
+                color = Color.White.copy(alpha = 0.55f),
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .wrapContentSize(unbounded = true)
+                    .rotate(-90f),
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .height(photoSize + 56.dp)
+                .background(Color.White.copy(alpha = 0.18f)),
+        )
     }
 }

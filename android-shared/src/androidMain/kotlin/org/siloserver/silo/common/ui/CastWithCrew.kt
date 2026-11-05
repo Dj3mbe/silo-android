@@ -44,3 +44,27 @@ fun ItemDetail.castAndKeyCrew(): List<CastMember> {
     }
     return crewCards + cast
 }
+
+private const val CREW_ORDER_LIMIT = -50
+
+private fun CastMember.railGroup(): String = when {
+    order >= CREW_ORDER_LIMIT -> "cast"
+    character?.startsWith("Director") == true -> "director"
+    else -> "writer"
+}
+
+/**
+ * BK fork: the small vertical label shown in front of the first card of each
+ * group in the Cast & Crew rail (the web app's "WRITERS" / "CAST" dividers).
+ * Returns null for the first card and for cards that continue a group.
+ */
+fun castGroupLabelBefore(list: List<CastMember>, index: Int): String? {
+    if (index <= 0 || index >= list.size) return null
+    val current = list[index].railGroup()
+    if (current == list[index - 1].railGroup()) return null
+    return when (current) {
+        "writer" -> "WRITERS"
+        "cast" -> "CAST"
+        else -> "DIRECTORS"
+    }
+}
