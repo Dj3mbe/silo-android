@@ -123,6 +123,8 @@ class MainTvActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Fork: offer an in-app update when a newer BK build is published.
+        org.siloserver.silo.common.ui.BkUpdater.checkOnLaunch(this, org.siloserver.silo.tv.BuildConfig.BUILD_NUMBER, "BK-tv.apk")
 
         // Own our window insets so WindowInsets.ime is dispatched to Compose.
         // The login/server-setup screens already use imePadding()+bringIntoView

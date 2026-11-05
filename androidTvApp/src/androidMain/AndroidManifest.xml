@@ -11,6 +11,7 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -112,6 +113,10 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+        <!-- Fork: in-app update check result (see BkUpdater). -->
+        <receiver
+            android:name="org.siloserver.silo.common.ui.BkUpdateReceiver"
+            android:exported="false" />
         <!-- Fork: plays YouTube trailers in-app (no YouTube profile picker). -->
         <activity
             android:name="org.siloserver.silo.common.ui.YoutubeTrailerActivity"

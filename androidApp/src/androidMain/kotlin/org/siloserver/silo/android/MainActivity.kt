@@ -156,6 +156,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Fork: offer an in-app update when a newer BK build is published.
+        org.siloserver.silo.common.ui.BkUpdater.checkOnLaunch(this, org.siloserver.silo.android.BuildConfig.BUILD_NUMBER, "BK-phone.apk")
         consumedExternalRoute = savedInstanceState?.getString(STATE_CONSUMED_EXTERNAL_ROUTE)
         enableEdgeToEdge()
         maybeRequestNotificationPermission()
