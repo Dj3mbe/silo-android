@@ -651,21 +651,27 @@ fun TvTopMenuBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(TvSkyline.barTrailingSpacing),
         ) {
-            TvTopMenuClock()
-            TvTopMenuProfileButton(
-                accountState = accountState,
-                isFocused = focusedButton == TvTopMenuFocus.Profile,
-                canFocus = canFocusButton(TvTopMenuFocus.Profile),
-                focusRequester = profileFocusRequester,
-                onFocusChanged = { hasFocus ->
-                    focusedButton = if (hasFocus) TvTopMenuFocus.Profile else focusedButton.takeUnless { it == TvTopMenuFocus.Profile }
-                    if (!hasFocus) onProfileBlur()
-                },
-                onClick = onProfileClick,
-            )
+            // BK: the avatar sits inside the clock pill; the pill outline turns
+            // white when the avatar is selected.
+            TvTopMenuClock(isProfileFocused = focusedButton == TvTopMenuFocus.Profile) {
+                TvTopMenuProfileButton(
+                    accountState = accountState,
+                    isFocused = focusedButton == TvTopMenuFocus.Profile,
+                    canFocus = canFocusButton(TvTopMenuFocus.Profile),
+                    focusRequester = profileFocusRequester,
+                    onFocusChanged = { hasFocus ->
+                        focusedButton = if (hasFocus) TvTopMenuFocus.Profile else focusedButton.takeUnless { it == TvTopMenuFocus.Profile }
+                        if (!hasFocus) onProfileBlur()
+                    },
+                    onClick = onProfileClick,
+                )
+            }
         }
     }
 }
+
+/** BK: avatar diameter inside the clock pill (pill is 30dp tall). */
+private val TvClockAvatarSize = 24.dp
 
 /** Minimal account view-data the menu bar + profile dropdown render. */
 data class TvAccountState(
@@ -685,7 +691,10 @@ data class TvAccountState(
  * refreshes on the minute.
  */
 @Composable
-private fun TvTopMenuClock() {
+private fun TvTopMenuClock(
+    isProfileFocused: Boolean,
+    trailing: @Composable () -> Unit,
+) {
     val context = LocalContext.current
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -698,19 +707,20 @@ private fun TvTopMenuClock() {
         android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date(now))
     }
     val shape = RoundedCornerShape(percent = 50)
-    Box(
+    Row(
         modifier = Modifier
             .height(TvSkyline.tabPillHeight)
             // A dark base under the usual capsule fill keeps the clock readable
             // over bright hero artwork, not just over the dark background.
             .background(Color.Black.copy(alpha = 0.72f), shape)
             .background(ChromeSelectedFill, shape)
-            .border(1.dp, Color.White.copy(alpha = 0.40f), shape)
-            .padding(
-                horizontal = TvSkyline.tabPaddingHorizontal,
-                vertical = TvSkyline.tabPaddingVertical,
-            ),
-        contentAlignment = Alignment.Center,
+            .border(
+                if (isProfileFocused) 2.dp else 1.dp,
+                if (isProfileFocused) SiloOnSurface else Color.White.copy(alpha = 0.40f),
+                shape,
+            )
+            .padding(start = TvSkyline.tabPaddingHorizontal, end = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text,
@@ -720,6 +730,8 @@ private fun TvTopMenuClock() {
             color = SiloOnSurface,
             maxLines = 1,
         )
+        Spacer(modifier = Modifier.width(10.dp))
+        trailing()
     }
 }
 
@@ -937,7 +949,7 @@ private fun TvTopMenuProfileButton(
         modifier = Modifier
             .focusProperties { this.canFocus = canFocus }
             .focusRequester(focusRequester)
-            .size(TvSkyline.barIconSize),
+            .size(TvClockAvatarSize),
     ) {
         Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
             TvTopMenuAvatar(
@@ -963,14 +975,9 @@ private fun TvTopMenuAvatar(
     Box(contentAlignment = Alignment.TopEnd) {
         Box(
             modifier = Modifier
-                .size(TvSkyline.barIconSize)
+                .size(TvClockAvatarSize)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.18f))
-                .border(
-                    width = if (isFocused) 2.dp else 1.dp,
-                    color = if (isFocused) SiloOnSurface else Color.White.copy(alpha = 0.18f),
-                    shape = CircleShape,
-                ),
+                .background(Color.White.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center,
         ) {
             if (avatarImage != null) {
