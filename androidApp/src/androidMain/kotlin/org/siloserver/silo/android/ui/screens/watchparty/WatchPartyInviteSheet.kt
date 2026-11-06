@@ -72,7 +72,7 @@ internal fun WatchPartyInviteSheet(
     fun share(text: String) {
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Join my Silo Watch Party")
+            putExtra(Intent.EXTRA_SUBJECT, "Join my BK Watch Party")
             putExtra(Intent.EXTRA_TEXT, text)
         }
         context.startActivity(Intent.createChooser(send, "Share Watch Party invitation"))

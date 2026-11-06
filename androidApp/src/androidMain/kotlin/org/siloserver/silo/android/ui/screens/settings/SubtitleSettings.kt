@@ -107,7 +107,7 @@ fun SubtitleMetadataSection(
     }
     SettingsSection(
         title = "Metadata",
-        footer = "Fallback language Silo prefers for titles, descriptions, and artwork.",
+        footer = "Fallback language BK prefers for titles, descriptions, and artwork.",
         modifier = modifier,
     ) {
         SettingsDropdownRow(

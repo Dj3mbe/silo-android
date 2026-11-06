@@ -633,7 +633,7 @@ private fun SettingsRail(
             modifier = Modifier.padding(start = 12.dp, bottom = 10.dp),
         )
         SettingsAccountRow(
-            name = state.profileName ?: state.user?.username ?: "Silo",
+            name = state.profileName ?: state.user?.username ?: "BK",
             subtitle = accountSubtitle(state),
             avatar = state.profileAvatar,
             onClick = onSwitchProfile,
@@ -664,7 +664,7 @@ private fun SettingsRail(
             onFocused = { railActionHasFocus = true },
         )
         Text(
-            text = "Silo ${clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)}",
+            text = "BingeKings ${clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)}",
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 12.dp, top = 6.dp),
@@ -1334,7 +1334,7 @@ private fun TvPlaybackSettingsPane(
                         "support. It does not force the HDMI output into HDR; Android may still convert " +
                         "the picture to SDR. Enable it only if you've confirmed your TV supports the " +
                         "source format. Unsupported formats may produce a black screen or incorrect colors." +
-                        " True Black Bars stops Silo from drawing the bars around the picture during " +
+                        " True Black Bars stops BK from drawing the bars around the picture during " +
                         "playback. Try it if they look grey in HDR or Dolby Vision, and turn it off again " +
                         "if they get lighter or show a thin line.",
                 )
@@ -1407,7 +1407,7 @@ private fun TvPlaybackSettingsPane(
                 )
                 SettingsFooterText(
                     text = "Rewind on Resume skips back when you return to a partly watched title. Still " +
-                        "Watching Prompt sets how many episodes play in a row before Silo asks whether " +
+                        "Watching Prompt sets how many episodes play in a row before BK asks whether " +
                         "you're still watching.",
                 )
             }
@@ -1913,7 +1913,7 @@ private fun TvSubtitleSettingsPane(
                         onClick = { activePicker = SubtitlePicker.MetadataLanguage },
                     )
                     SettingsFooterText(
-                        text = "Fallback language Silo prefers for titles, descriptions, and artwork.",
+                        text = "Fallback language BK prefers for titles, descriptions, and artwork.",
                     )
                 }
             }

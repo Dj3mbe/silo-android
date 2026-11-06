@@ -94,9 +94,9 @@ private fun RoomMember.isSameMemberAs(other: RoomMember): Boolean =
 /** Share text: the host's invitation link with the code, or the code alone for guests. */
 internal fun watchPartyShareText(code: String, inviteUrl: String?): String =
     if (inviteUrl != null) {
-        "Join my Watch Party on Silo: $inviteUrl\nOr enter the code $code."
+        "Join my Watch Party on BK: $inviteUrl\nOr enter the code $code."
     } else {
-        "Join my Watch Party on Silo with the code $code."
+        "Join my Watch Party on BK with the code $code."
     }
 
 /** Quality chips for the staged version, for example "4K" and "HDR". */
