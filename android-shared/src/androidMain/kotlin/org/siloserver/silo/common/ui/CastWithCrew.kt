@@ -4,12 +4,13 @@ import org.siloserver.silo.model.catalog.CastMember
 import org.siloserver.silo.model.catalog.CrewMember
 import org.siloserver.silo.model.catalog.ItemDetail
 
+private val CREATOR_JOBS = setOf("creator", "series creator", "created by")
 private val DIRECTOR_JOBS = setOf("director")
 private val WRITER_JOBS = setOf("writer", "screenplay", "story", "teleplay")
 
 /**
  * BK fork: the "Cast & Crew" rail with the key crew (directors, then writers)
- * placed ahead of the cast, as the web app does. Each crew member is shown as
+ * placed ahead of the cast (creator, directors, then writers), as the web app does. Each crew member is shown as
  * a card whose caption is their job, and opens the same person page.
  */
 fun ItemDetail.castAndKeyCrew(): List<CastMember> {
@@ -25,6 +26,7 @@ fun ItemDetail.castAndKeyCrew(): List<CastMember> {
                 if (label !in entry.second) entry.second.add(label)
             }
     }
+    add(CREATOR_JOBS, "Creator")
     add(DIRECTOR_JOBS, "Director")
     add(WRITER_JOBS, "Writer")
     if (credits.isEmpty()) return cast
@@ -49,6 +51,7 @@ private const val CREW_ORDER_LIMIT = -50
 
 private fun CastMember.railGroup(): String = when {
     order >= CREW_ORDER_LIMIT -> "cast"
+    character?.startsWith("Creator") == true -> "creator"
     character?.startsWith("Director") == true -> "director"
     else -> "writer"
 }
@@ -64,6 +67,7 @@ fun castGroupLabelBefore(list: List<CastMember>, index: Int): String? {
     if (current == list[index - 1].railGroup()) return null
     return when (current) {
         "writer" -> "WRITERS"
+        "creator" -> "CREATORS"
         "cast" -> "CAST"
         else -> "DIRECTORS"
     }
