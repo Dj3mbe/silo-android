@@ -281,20 +281,41 @@ fun TvSearchScreen(
     // A spoken query is a submitted query, including the focus handoff:
     // nobody dictates a title in order to be left sitting on the search field.
     var voiceUnavailableMessage by remember { mutableStateOf<String?>(null) }
-    val voiceSearch = rememberTvVoiceSearch(
+    val handleSpoken: (String) -> Unit = { spoken ->
+        // The same cap typing obeys; recognised text never went through
+        // the field's own limit.
+        val query = spoken.take(TV_SEARCH_QUERY_MAX_LENGTH)
+        voiceUnavailableMessage = null
+        viewModel.onQueryChanged(query)
+        submitQuery(query)
+    }
+    val systemVoiceSearch = rememberTvVoiceSearch(
         prompt = "Speak a title",
-        onResult = { spoken ->
-            // The same cap typing obeys; recognised text never went through
-            // the field's own limit.
-            val query = spoken.take(TV_SEARCH_QUERY_MAX_LENGTH)
-            voiceUnavailableMessage = null
-            viewModel.onQueryChanged(query)
-            submitQuery(query)
-        },
+        onResult = handleSpoken,
         onUnavailable = {
             voiceUnavailableMessage = "Voice search isn't available on this device."
         },
     )
+    // BK: on Nvidia Shield the system "Speak a title" screen never hears audio,
+    // so listen inside the app instead.
+    val inAppVoice = rememberTvInAppVoice(
+        onResult = handleSpoken,
+        onStatus = { voiceUnavailableMessage = it },
+    )
+    val useInAppVoice = remember {
+        android.os.Build.MANUFACTURER.equals("NVIDIA", ignoreCase = true)
+    } && inAppVoice.isAvailable
+    val voiceSearch = remember(systemVoiceSearch, inAppVoice, useInAppVoice) {
+        if (useInAppVoice) {
+            TvVoiceSearchController(
+                isAvailable = true,
+                launch = { inAppVoice.start(); true },
+                onUnavailable = {},
+            )
+        } else {
+            systemVoiceSearch
+        }
+    }
 
     LaunchedEffect(requestsEnabled, state.query, requestMediaType) {
         val query = state.query.trim()
