@@ -857,10 +857,9 @@ fun TvSearchScreen(
             },
             emptyState = {
                 when {
-                    state.query.isBlank() -> SearchFeedbackMessage(
-                        title = "Search your library",
-                        body = availableMediaDescription(state.availableMediaTypes),
-                    )
+                    // BK: the search box already says "Search movies and series",
+                    // so the idle screen shows nothing rather than repeat it.
+                    state.query.isBlank() -> Box(modifier = Modifier.height(64.dp))
                     state.isLoading -> Box(modifier = Modifier.height(64.dp))
                     state.error != null -> SearchFeedbackMessage(
                         title = "Search is unavailable",
