@@ -154,6 +154,10 @@ fun TvSeriesModePicker(
     modifier: Modifier = Modifier,
     horizontalContentPadding: Dp = 0.dp,
     onDirectionUp: (() -> Boolean)? = null,
+    // BK: hold Select on a pill for a quick watched menu. Optional, so the
+    // three-dots More menu stays the always-working route.
+    onShowLongPress: (() -> Unit)? = null,
+    onSeasonLongPress: ((Season) -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     val selectedFocusRequester = remember { FocusRequester() }
@@ -204,6 +208,7 @@ fun TvSeriesModePicker(
                 title = "Show",
                 isSelected = isShowingSeriesOverview,
                 onActivated = onShowSelected,
+                onLongPress = onShowLongPress,
                 modifier = if (isShowingSeriesOverview) {
                     Modifier.focusRequester(selectedFocusRequester)
                 } else {
@@ -221,6 +226,7 @@ fun TvSeriesModePicker(
                 title = tvSeasonPickerLabel(season),
                 isSelected = selected,
                 onActivated = { onSeasonSelected(season) },
+                onLongPress = onSeasonLongPress?.let { handler -> { handler(season) } },
                 modifier = if (selected) {
                     Modifier.focusRequester(selectedFocusRequester)
                 } else {
@@ -237,10 +243,14 @@ private fun TvSeriesModeTab(
     isSelected: Boolean,
     onActivated: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongPress: (() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val isPressed by interactionSource.collectIsPressedAsState()
+    // True once this hold has already opened the menu, so the held key's
+    // repeats cannot open it twice.
+    var longPressFired by remember { mutableStateOf(false) }
     val fill by animateColorAsState(
         targetValue = when {
             isFocused -> Color.White
@@ -268,6 +278,26 @@ private fun TvSeriesModeTab(
 
     Box(
         modifier = modifier
+            .then(
+                if (onLongPress != null) {
+                    Modifier.onPreviewKeyEvent { event ->
+                        val isSelectKey = event.key == Key.DirectionCenter ||
+                            event.key == Key.Enter ||
+                            event.key == Key.NumPadEnter
+                        if (isSelectKey && event.type == KeyEventType.KeyDown) {
+                            if (event.nativeKeyEvent.repeatCount == 0) longPressFired = false
+                            if (event.nativeKeyEvent.repeatCount > 0 && !longPressFired) {
+                                longPressFired = true
+                                onLongPress()
+                            }
+                        }
+                        // Never consumed: the normal press behaves exactly as before.
+                        false
+                    }
+                } else {
+                    Modifier
+                },
+            )
             .graphicsLayer {
                 val pressScale = if (isPressed) 0.98f else 1f
                 scaleX = pressScale

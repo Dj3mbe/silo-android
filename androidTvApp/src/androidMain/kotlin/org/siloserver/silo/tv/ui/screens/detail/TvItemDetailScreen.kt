@@ -482,6 +482,9 @@ private fun TvDetailContent(
     val coroutineScope = rememberCoroutineScope()
     val isAudiobook = isAudiobookItemType(detail.type)
     val isSeriesDetail = detail.type == "series"
+    // BK: holding Select on a Show/Season pill asks the hero's existing
+    // "More Actions" menu to open. A counter, so every hold is a fresh request.
+    var moreActionsRequest by remember { mutableStateOf(0) }
     var isShowingSeriesOverview by rememberSaveable(
         detail.contentId,
         initialSeasonNumber,
@@ -1013,6 +1016,7 @@ private fun TvDetailContent(
                                     onSeasonClick = onSeasonClick,
                                     libraryId = libraryId,
                                     onWatchParty = onWatchParty,
+                                    moreActionsRequest = moreActionsRequest,
                                     // Season mode marks the selected season;
                                     // Show mode offers only the whole series.
                                     watchedSeason = state.seasons
@@ -1267,6 +1271,7 @@ private fun TvDetailContent(
                                 onCarouselFocusLost = viewModel::onCarouselFocusLost,
                                 onSetEpisodeWatched = viewModel::onSetEpisodeWatched,
                                 onSetEpisodeFavorite = viewModel::onSetEpisodeFavorite,
+                                onOpenMoreActions = { moreActionsRequest += 1 },
                             )
                             }
                         }
@@ -1758,9 +1763,14 @@ private fun HeroActionRow(
     onShuffleSeries: (() -> Unit)? = null,
     shuffleSeason: org.siloserver.silo.model.catalog.Season? = null,
     onShuffleSeason: (org.siloserver.silo.model.catalog.Season) -> Unit = {},
+    moreActionsRequest: Int = 0,
 ) {
     val watchPartyEntry = rememberTvWatchPartyDetailEntry()
     var moreOpen by remember(detail.contentId) { mutableStateOf(false) }
+    // BK: a hold on a Show/Season pill opens this same menu.
+    LaunchedEffect(moreActionsRequest) {
+        if (moreActionsRequest > 0) moreOpen = true
+    }
     var playLaunchPending by remember(detail.contentId) { mutableStateOf(false) }
     LaunchedEffect(playLaunchPending) {
         if (playLaunchPending) {
@@ -2277,6 +2287,7 @@ private fun EpisodesSection(
     onCarouselFocusLost: () -> Unit,
     onSetEpisodeWatched: (contentId: String, watched: Boolean) -> Unit,
     onSetEpisodeFavorite: (contentId: String, favorite: Boolean) -> Unit,
+    onOpenMoreActions: () -> Unit = {},
 ) {
     val isSeries = detail.type == "series"
     val railEpisodes = if (isSeries) state.carouselEpisodes.ifEmpty { state.episodes } else state.episodes
@@ -2319,6 +2330,9 @@ private fun EpisodesSection(
                     // it is not attached yet, fall back to Play.
                     onDirectionUp = onReturnToSeriesSelector ?: onReturnToHero,
                     horizontalContentPadding = TvDetailHorizontalInset,
+                    // Holding Select on a pill opens the existing More Actions menu.
+                    onShowLongPress = onOpenMoreActions,
+                    onSeasonLongPress = { onOpenMoreActions() },
                 )
             } else {
                 TvSeasonPicker(
