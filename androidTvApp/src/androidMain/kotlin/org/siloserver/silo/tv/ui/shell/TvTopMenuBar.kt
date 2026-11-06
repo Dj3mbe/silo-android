@@ -521,7 +521,26 @@ fun TvTopMenuBar(
                 .height(TvSkyline.barHeight),
             contentAlignment = Alignment.Center,
         ) {
-            TvSiloWordmark()
+            // BK: the search icon lives inside the crown pill; the pill outline
+            // turns white when search is selected.
+            TvSiloWordmark(isFocused = focusedButton == TvTopMenuFocus.Search) {
+                TvTopMenuIconButton(
+                    icon = Icons.Outlined.Search,
+                    contentDescription = "Search",
+                    isFocused = focusedButton == TvTopMenuFocus.Search,
+                    canFocus = canFocusButton(TvTopMenuFocus.Search),
+                    focusRequester = searchFocusRequester,
+                    onFocusChanged = { hasFocus ->
+                        focusedButton = if (hasFocus) {
+                            TvTopMenuFocus.Search
+                        } else {
+                            focusedButton.takeUnless { it == TvTopMenuFocus.Search }
+                        }
+                    },
+                    onClick = onSearchClick,
+                    inPill = true,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -535,22 +554,6 @@ fun TvTopMenuBar(
             horizontalArrangement = Arrangement.spacedBy(TvSkyline.tabSpacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TvTopMenuIconButton(
-                icon = Icons.Outlined.Search,
-                contentDescription = "Search",
-                isFocused = focusedButton == TvTopMenuFocus.Search,
-                canFocus = canFocusButton(TvTopMenuFocus.Search),
-                focusRequester = searchFocusRequester,
-                onFocusChanged = { hasFocus ->
-                    focusedButton = if (hasFocus) {
-                        TvTopMenuFocus.Search
-                    } else {
-                        focusedButton.takeUnless { it == TvTopMenuFocus.Search }
-                    }
-                },
-                onClick = onSearchClick,
-            )
-
             destinations.forEach { destination ->
                 when (destination) {
                     TvRootDestination.Home -> TvTopMenuTab(
@@ -635,10 +638,6 @@ fun TvTopMenuBar(
                     )
                 }
             }
-
-            // Invisible twin of the search button so the tab group stays
-            // centered on screen with search sitting to its left.
-            Spacer(modifier = Modifier.size(TvSkyline.barIconSize))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -735,18 +734,25 @@ private fun TvTopMenuClock(
     }
 }
 
-/** The Silo brand lockup image, sized to the bar. */
+/** The BK crown pill (BK: also holds the search icon), sized to the bar. */
 @Composable
-private fun TvSiloWordmark() {
+private fun TvSiloWordmark(
+    isFocused: Boolean,
+    trailing: @Composable () -> Unit,
+) {
     val shape = RoundedCornerShape(percent = 50)
-    Box(
+    Row(
         modifier = Modifier
             .height(TvSkyline.tabPillHeight)
             .background(Color.Black.copy(alpha = 0.72f), shape)
             .background(ChromeSelectedFill, shape)
-            .border(1.dp, Color.White.copy(alpha = 0.40f), shape)
-            .padding(horizontal = 6.dp, vertical = 1.dp),
-        contentAlignment = Alignment.Center,
+            .border(
+                if (isFocused) 2.dp else 1.dp,
+                if (isFocused) SiloOnSurface else Color.White.copy(alpha = 0.40f),
+                shape,
+            )
+            .padding(start = 6.dp, end = 3.dp, top = 1.dp, bottom = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
             painter = painterResource(id = R.drawable.bk_crown_pill),
@@ -756,6 +762,15 @@ private fun TvSiloWordmark() {
                 .fillMaxHeight()
                 .aspectRatio(TvSiloWordmarkAspect),
         )
+        Spacer(modifier = Modifier.width(6.dp))
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .height(14.dp)
+                .background(Color.White.copy(alpha = 0.25f)),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        trailing()
     }
 }
 
@@ -866,14 +881,22 @@ private fun TvTopMenuIconButton(
     focusRequester: FocusRequester,
     onFocusChanged: (Boolean) -> Unit,
     onClick: () -> Unit,
+    inPill: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isInteractionFocused by interactionSource.collectIsFocusedAsState()
     LaunchedEffect(isInteractionFocused) { onFocusChanged(isInteractionFocused) }
 
     val shape = CircleShape
-    val containerColor = if (isFocused) SiloOnSurface else Color.Transparent
-    val iconColor = if (isFocused) DarkBackground else SiloOnSurface.copy(alpha = 0.62f)
+    // BK: inside the crown pill the focus cue is the pill outline, so the
+    // button itself never fills white.
+    val fillWhenFocused = !inPill
+    val containerColor = if (isFocused && fillWhenFocused) SiloOnSurface else Color.Transparent
+    val iconColor = when {
+        isFocused && fillWhenFocused -> DarkBackground
+        isFocused -> SiloOnSurface
+        else -> SiloOnSurface.copy(alpha = 0.62f)
+    }
 
     Surface(
         onClick = onClick,
@@ -882,10 +905,10 @@ private fun TvTopMenuIconButton(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = containerColor,
             contentColor = iconColor,
-            focusedContainerColor = SiloOnSurface,
-            focusedContentColor = DarkBackground,
-            pressedContainerColor = SiloOnSurface,
-            pressedContentColor = DarkBackground,
+            focusedContainerColor = if (fillWhenFocused) SiloOnSurface else Color.Transparent,
+            focusedContentColor = if (fillWhenFocused) DarkBackground else SiloOnSurface,
+            pressedContainerColor = if (fillWhenFocused) SiloOnSurface else Color.Transparent,
+            pressedContentColor = if (fillWhenFocused) DarkBackground else SiloOnSurface,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         border = ClickableSurfaceDefaults.border(
@@ -895,7 +918,7 @@ private fun TvTopMenuIconButton(
         modifier = Modifier
             .focusProperties { this.canFocus = canFocus }
             .focusRequester(focusRequester)
-            .size(TvSkyline.barIconSize),
+            .size(if (inPill) TvClockAvatarSize else TvSkyline.barIconSize),
     ) {
         Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
             Icon(
