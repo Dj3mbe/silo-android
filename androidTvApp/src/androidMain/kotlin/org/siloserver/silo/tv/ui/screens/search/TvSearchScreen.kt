@@ -296,15 +296,14 @@ fun TvSearchScreen(
             voiceUnavailableMessage = "Voice search isn't available on this device."
         },
     )
-    // BK: on Nvidia Shield the system "Speak a title" screen never hears audio,
-    // so listen inside the app instead.
+    // BK: the system "Speak a title" screen never hears audio on some devices
+    // (Nvidia Shield), so listen inside the app whenever the device can. Devices
+    // without a speech service fall back to the system screen below.
     val inAppVoice = rememberTvInAppVoice(
         onResult = handleSpoken,
         onStatus = { voiceUnavailableMessage = it },
     )
-    val useInAppVoice = remember {
-        android.os.Build.MANUFACTURER.equals("NVIDIA", ignoreCase = true)
-    } && inAppVoice.isAvailable
+    val useInAppVoice = inAppVoice.isAvailable
     val voiceSearch = remember(systemVoiceSearch, inAppVoice, useInAppVoice) {
         if (useInAppVoice) {
             TvVoiceSearchController(
