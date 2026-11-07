@@ -718,7 +718,8 @@ private fun TvTopMenuClock(
                 if (isProfileFocused) SiloOnSurface else Color.White.copy(alpha = 0.40f),
                 shape,
             )
-            .padding(start = TvSkyline.tabPaddingHorizontal, end = 3.dp),
+            // LAB: tighter left side than the tab pills (was tabPaddingHorizontal)
+            .padding(start = 10.dp, end = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -729,7 +730,7 @@ private fun TvTopMenuClock(
             color = SiloOnSurface,
             maxLines = 1,
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         trailing()
     }
 }
