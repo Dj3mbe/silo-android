@@ -29,7 +29,10 @@ jobs:
           ref: ${{ env.BRANCH }}
       - name: Put the LAB images and splash in place (build time only)
         run: |
-          if [ -f bk-upload-labassets.zip ]; then unzip -oq bk-upload-labassets.zip; fi
+          # Every bk-upload-*.zip dragged onto the lab branch is unpacked here, in name order.
+          find . -maxdepth 1 -name 'bk-upload-*.zip' -print0 | sort -z | while IFS= read -r -d '' z; do
+            echo "unpacking $z"; unzip -oq "$z"
+          done
           if [ -d lab-assets ]; then cp -r lab-assets/. . ; fi
 
       - name: Work out version
