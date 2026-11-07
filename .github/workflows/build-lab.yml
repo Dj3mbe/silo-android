@@ -29,6 +29,7 @@ jobs:
           ref: ${{ env.BRANCH }}
       - name: Put the LAB images and splash in place (build time only)
         run: |
+          if [ -f bk-upload-labassets.zip ]; then unzip -oq bk-upload-labassets.zip; fi
           if [ -d lab-assets ]; then cp -r lab-assets/. . ; fi
 
       - name: Work out version
