@@ -73,7 +73,8 @@ internal val CascadeFlyoutGap = 9.dp
 internal val CascadePanelPadding = 7.dp
 internal val CascadeFlyoutPadding = 5.dp
 internal val CascadeFlyoutCornerRadius = 9.dp
-internal val CascadeMaxListHeight = 180.dp
+// BK: was 180.dp (about 5 rows). 360.dp shows about 10 before the list scrolls.
+internal val CascadeMaxListHeight = 360.dp
 internal val TvCascadeSelectorMaxPanelWidth = 389.dp
 internal val CascadePanelHeaderSize = 14.sp
 internal val CascadeFlyoutHeaderSize = 14.sp
@@ -396,6 +397,7 @@ fun TvCascadeSelector(
                         .padding(CascadePanelPadding),
                 ) {
                     CascadePanelHeader(type.librariesHeader)
+                    Box {
                     LazyColumn(
                         state = lazyListState,
                         modifier = Modifier.heightIn(max = CascadeMaxListHeight),
@@ -433,6 +435,20 @@ fun TvCascadeSelector(
                                 },
                             )
                         }
+                    }
+                    // BK: only when more libraries sit below the visible rows.
+                    if (lazyListState.canScrollForward) {
+                        Text(
+                            text = "↓ more",
+                            color = SiloOnSurface.copy(alpha = 0.70f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .background(DarkBackground.copy(alpha = 0.85f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
                     }
                     CascadePanelFooter(isSingleLibrary = false)
                 }
@@ -538,7 +554,7 @@ private fun CascadePanelFooter(isSingleLibrary: Boolean) {
         caption = if (isSingleLibrary) {
             "Press opens the section · Menu closes"
         } else {
-            "Press opens the library · → jumps to a section · Menu closes"
+            "Press opens · → sections"
         },
     )
 }
