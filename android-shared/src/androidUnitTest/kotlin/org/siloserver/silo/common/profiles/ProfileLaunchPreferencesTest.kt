@@ -196,6 +196,86 @@ class ProfileLaunchPreferencesTest {
         tracker.onRemotePlaybackChanged()
         assertNull(store.state.value.backgroundedAtMs)
     }
+
+    private fun everyTimeTracker(): Pair<ProfileLaunchPreferences, ProfileAwayTracker> {
+        val store = ProfileLaunchPreferences(InMemoryPrefs()) { start }
+        store.setBehavior(ProfileLaunchBehavior.EveryTime)
+        return store to ProfileAwayTracker(store, ActivePlayerHolder(), isCasting = { false })
+    }
+
+    @Test
+    fun `an overlay screen over the main Activity is not leaving Silo`() {
+        val (store, tracker) = everyTimeTracker()
+        tracker.onForeground()
+
+        // Android starts the overlay, then stops the main Activity under it.
+        tracker.onOverlayScreenStarted()
+        tracker.onBackground()
+        assertNull(store.state.value.backgroundedAtMs)
+
+        // Closing it starts the main Activity again, then stops the overlay.
+        tracker.onForeground()
+        tracker.onOverlayScreenStopped(isChangingConfigurations = false)
+
+        assertNull(store.state.value.backgroundedAtMs)
+        assertFalse(tracker.selectionRequired.value)
+    }
+
+    @Test
+    fun `leaving Silo from an overlay screen starts the away clock, so Every Time asks`() {
+        val (store, tracker) = everyTimeTracker()
+        tracker.onForeground()
+        tracker.onOverlayScreenStarted()
+        tracker.onBackground()
+
+        // Home or another app while the overlay is up.
+        tracker.onOverlayScreenStopped(isChangingConfigurations = false)
+        assertEquals(start, store.state.value.backgroundedAtMs)
+
+        tracker.onForeground()
+        assertTrue(tracker.selectionRequired.value)
+    }
+
+    @Test
+    fun `an overlay screen that is recreated for a configuration change is not leaving`() {
+        val (store, tracker) = everyTimeTracker()
+        tracker.onForeground()
+        tracker.onOverlayScreenStarted()
+        tracker.onBackground()
+
+        tracker.onOverlayScreenStopped(isChangingConfigurations = true)
+        tracker.onOverlayScreenStarted()
+        assertNull(store.state.value.backgroundedAtMs)
+
+        tracker.onForeground()
+        tracker.onOverlayScreenStopped(isChangingConfigurations = false)
+        assertNull(store.state.value.backgroundedAtMs)
+        assertFalse(tracker.selectionRequired.value)
+    }
+
+    @Test
+    fun `the main Activity stopping with no overlay still starts the away clock`() {
+        val (store, tracker) = everyTimeTracker()
+        tracker.onForeground()
+        tracker.onBackground()
+        assertEquals(start, store.state.value.backgroundedAtMs)
+
+        tracker.onForeground()
+        assertTrue(tracker.selectionRequired.value)
+    }
+
+    @Test
+    fun `a stray overlay stop never leaves the count below zero`() {
+        val (store, tracker) = everyTimeTracker()
+        tracker.onForeground()
+        tracker.onOverlayScreenStopped(isChangingConfigurations = false)
+
+        // The main Activity is still started, so nothing was left.
+        assertNull(store.state.value.backgroundedAtMs)
+        tracker.onOverlayScreenStarted()
+        tracker.onBackground()
+        assertNull(store.state.value.backgroundedAtMs)
+    }
 }
 
 /** Just enough SharedPreferences for the store: strings, longs and booleans. */

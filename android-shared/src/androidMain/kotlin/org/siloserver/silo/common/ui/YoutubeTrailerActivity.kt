@@ -18,6 +18,8 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import org.koin.java.KoinJavaComponent.get
+import org.siloserver.silo.common.profiles.ProfileAwayTracker
 
 /**
  * Plays a YouTube trailer inside Silo with YouTube's embedded player.
@@ -32,6 +34,10 @@ import android.webkit.WebViewClient
  * [LOAD_TIMEOUT_MS] of the page loading, it hands the trailer to the YouTube
  * app instead. An error after the trailer has started just closes the
  * player: handing off mid-trailer would bring back YouTube's profile picker.
+ *
+ * The player is part of Silo, so opening it is not leaving Silo: it tells
+ * [ProfileAwayTracker], and a viewer on "Every Time" is not asked who is
+ * watching when the trailer ends.
  */
 class YoutubeTrailerActivity : Activity() {
 
@@ -96,6 +102,17 @@ class YoutubeTrailerActivity : Activity() {
         view.loadDataWithBaseURL(EMBED_ORIGIN, playerHtml(videoId), "text/html", "utf-8", null)
         // Backstop in case the page itself never finishes loading.
         handler.postDelayed(loadTimeout, PAGE_LOAD_TIMEOUT_MS)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        get<ProfileAwayTracker>(ProfileAwayTracker::class.java).onOverlayScreenStarted()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        get<ProfileAwayTracker>(ProfileAwayTracker::class.java)
+            .onOverlayScreenStopped(isChangingConfigurations)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
