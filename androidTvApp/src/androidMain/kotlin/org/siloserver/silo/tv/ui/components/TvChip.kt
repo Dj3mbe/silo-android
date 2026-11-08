@@ -18,6 +18,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloBlue
 import org.siloserver.silo.tv.ui.theme.DarkOnPrimary
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
@@ -60,7 +61,7 @@ fun TvFilterChip(
                 shape = shape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(0.dp, Color.Transparent),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),

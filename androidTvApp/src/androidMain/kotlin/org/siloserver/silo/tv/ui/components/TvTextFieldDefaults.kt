@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * Canonical control metrics for the TV auth/onboarding forms (server setup,
@@ -21,7 +22,7 @@ object TvAuthFormDefaults {
 fun tvOutlinedTextFieldColors(
     focusedContainerColor: Color = Color.White.copy(alpha = 0.04f),
     unfocusedContainerColor: Color = Color.White.copy(alpha = 0.03f),
-    focusedBorderColor: Color = Color.White.copy(alpha = 0.92f),
+    focusedBorderColor: Color = FocusAccent,
     unfocusedBorderColor: Color = Color.White.copy(alpha = 0.22f),
 ): TextFieldColors = OutlinedTextFieldDefaults.colors(
     focusedTextColor = Color.White,

@@ -52,6 +52,7 @@ import org.siloserver.silo.common.ui.LanguageNames
 import org.siloserver.silo.model.subtitles.SubtitleResult
 import org.siloserver.silo.tv.ui.components.rememberTvDialogInitialFocus
 import org.siloserver.silo.tv.ui.theme.DarkBackground
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 
@@ -310,7 +311,7 @@ private fun TvSubtitleResultRow(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, DarkBackground.copy(alpha = 0.82f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),
@@ -459,7 +460,7 @@ internal fun TvDialogCyclerRow(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.025f),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, DarkBackground.copy(alpha = 0.82f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),
@@ -560,7 +561,7 @@ internal fun TvDialogActionRow(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.025f),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, DarkBackground.copy(alpha = 0.82f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),

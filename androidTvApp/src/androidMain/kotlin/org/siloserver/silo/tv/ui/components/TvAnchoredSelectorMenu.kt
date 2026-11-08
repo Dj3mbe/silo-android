@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,6 +71,8 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.theme.glassSheen
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.screens.player.TvPlayerType
 
@@ -605,6 +606,8 @@ private fun SelectorMenuRow(
             .fillMaxWidth()
             .clip(shape)
             .background(visual.container)
+            .glassSheen(shape, visible = option.selected && option.enabled && !focused)
+            .then(if (focused) Modifier.border(2.dp, FocusAccent, shape) else Modifier)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -615,16 +618,7 @@ private fun SelectorMenuRow(
             .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Box(modifier = Modifier.width(28.dp).padding(top = 1.dp)) {
-            if (option.selected) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
-                    tint = visual.content,
-                    modifier = Modifier.size(19.dp),
-                )
-            }
-        }
+        Spacer(modifier = Modifier.width(28.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = option.title,

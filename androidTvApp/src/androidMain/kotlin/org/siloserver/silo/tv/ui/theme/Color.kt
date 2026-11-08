@@ -29,9 +29,16 @@ val DarkOutlineVariant = Color.White.copy(alpha = 0.08f)
 val Scrim = Color(0xFF000000)
 
 // Focus signature — tvOS uses a white-on-white card style with a soft shadow.
+// The ring colour is the user-selected accent, see Accent.kt.
 val FocusedContainer = SiloOnSurface
 val FocusedContent = DarkBackground
-val SelectedContainer = Color.White.copy(alpha = 0.12f)
+
+// Selection signature — a hue distinct from the focus accent, so "this is the
+// current choice" and "this is where the cursor is" never look alike.
+// The colour is user-selected, see Selected.kt.
+val SelectedFill: Color get() = TvSelected.fill
+val SelectedStroke: Color get() = TvSelected.stroke
+val SelectedContent: Color get() = TvSelected.content
 val SubtleSurface = Color.White.copy(alpha = 0.08f)
 val ElevatedSurface = DarkSurfaceElevated.copy(alpha = 0.80f)
 
@@ -41,8 +48,11 @@ val HeroIndicatorInactive = Color.White.copy(alpha = 0.32f)
 // `siloChromeSelectedBorder` in iOS `Theme/Colors.swift`. The focused
 // capsule inverts to a solid `SiloOnSurface` fill (white-on-background);
 // a selected-but-unfocused tab carries only this low-alpha chrome.
-val ChromeSelectedFill = Color.White.copy(alpha = 0.14f)
-val ChromeSelectedBorder = Color.White.copy(alpha = 0.10f)
+val ChromeSelectedBorder: Color get() = SelectedStroke.copy(alpha = 0.55f)
+
+// Resting fill of the crown/search and clock/profile pills. They are chrome,
+// not a selection, so they keep the neutral capsule fill.
+val ChromePillFill = Color.White.copy(alpha = 0.14f)
 
 // Legacy lavender accent collapses to monochrome white-at-opacity. tvOS does not
 // use a chromatic accent — focus state is the lift+glow, progress is white-on-white.

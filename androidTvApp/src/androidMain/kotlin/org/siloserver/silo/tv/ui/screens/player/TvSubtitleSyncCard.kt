@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.siloserver.silo.playback.SubtitleSyncNotice
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 private val SyncSuccessColor = Color(0xFF6EE7B7)
 private val SyncInfoColor = Color(0xFF7DD3FC)
@@ -79,7 +80,7 @@ private fun TvSubtitleSyncCardContent(notice: SubtitleSyncNotice) {
             val iconModifier = Modifier.padding(top = 2.dp).size(22.dp)
             when (notice.tone) {
                 SubtitleSyncNotice.Tone.Progress -> CircularProgressIndicator(
-                    color = Color.White,
+                    color = FocusAccent,
                     trackColor = Color.White.copy(alpha = 0.25f),
                     strokeWidth = 2.5.dp,
                     modifier = iconModifier,

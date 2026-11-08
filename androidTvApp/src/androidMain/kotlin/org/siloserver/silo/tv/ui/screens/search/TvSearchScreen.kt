@@ -97,6 +97,7 @@ import org.siloserver.silo.tv.ui.screens.requests.TvRequestCard
 import org.siloserver.silo.tv.ui.screens.requests.filterTvRequestResults
 import org.siloserver.silo.tv.ui.shell.TvTopMenuLayout
 import org.siloserver.silo.tv.ui.theme.ElevatedSurface
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.viewmodel.RequestSearchViewModel
 import kotlinx.coroutines.delay
@@ -1010,7 +1011,7 @@ private fun RequestSearchFeedbackRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showProgress) {
-            CircularProgressIndicator(modifier = Modifier.size(22.dp))
+            CircularProgressIndicator(color = FocusAccent, modifier = Modifier.size(22.dp))
         }
         Text(
             text = message,
@@ -1197,7 +1198,7 @@ private fun SearchStage(
                 colors = tvOutlinedTextFieldColors(
                     focusedContainerColor = ElevatedSurface,
                     unfocusedContainerColor = Color.White.copy(alpha = 0.055f),
-                    focusedBorderColor = Color.White.copy(alpha = 0.94f),
+                    focusedBorderColor = FocusAccent,
                     unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
                 ),
             )

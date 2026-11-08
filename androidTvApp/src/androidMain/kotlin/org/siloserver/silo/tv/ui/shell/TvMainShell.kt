@@ -107,6 +107,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.siloserver.silo.common.diagnostics.DiagnosticsFocusLogger
 import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.common.ui.components.ProfileAvatarRef
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import org.siloserver.silo.common.network.ServerReachabilityMonitor
@@ -1257,7 +1258,14 @@ fun TvMainShell(
                                 // therefore treated exactly like a failed move:
                                 // route to the selected tab.
                                 val escapedContent = moved && !contentHasFocus
-                                if (shouldRequestMenuAfterContentUp(moved && !escapedContent, isRepeat)) {
+                                // On the Search screen, leave focus wherever the Up
+                                // move landed (e.g. Home) instead of bouncing it to
+                                // the Search/crown pill.
+                                val keepLanding = escapedContent &&
+                                    currentRoute == TvMainRoute.Search.route
+                                if (!keepLanding &&
+                                    shouldRequestMenuAfterContentUp(moved && !escapedContent, isRepeat)
+                                ) {
                                     focusState.requestMenuFocusIfAvailable(
                                         selectedMenuFocusTarget,
                                         allowNullTarget = currentRoute == TvMainRoute.Search.route,
@@ -2224,7 +2232,7 @@ private fun TvServerOfflinePill(
         ),
         border = ClickableSurfaceDefaults.border(
             border = Border(border = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)), shape = pillShape),
-            focusedBorder = Border(border = BorderStroke(1.dp, SiloOnSurface), shape = pillShape),
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = pillShape),
         ),
     ) {
         Text(
@@ -2274,7 +2282,7 @@ private fun ProfileDropdownRow(
         ),
         border = ClickableSurfaceDefaults.border(
             border = Border(border = BorderStroke(0.dp, Color.Transparent), shape = rowShape),
-            focusedBorder = Border(border = BorderStroke(0.dp, Color.Transparent), shape = rowShape),
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = rowShape),
         ),
     ) {
         Row(

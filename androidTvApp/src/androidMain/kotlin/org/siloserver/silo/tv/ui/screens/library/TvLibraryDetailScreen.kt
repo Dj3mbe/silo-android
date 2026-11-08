@@ -75,6 +75,7 @@ import org.siloserver.silo.tv.ui.components.TvFilterChip
 import org.siloserver.silo.tv.ui.components.TvMediaCard
 import org.siloserver.silo.tv.ui.components.TvSkylineSectionFeed
 import org.siloserver.silo.tv.ui.shell.TvTopMenuLayout
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.SubtleSurface
 import org.siloserver.silo.tv.ui.theme.rememberTvGridBringIntoViewSpec
@@ -1277,7 +1278,7 @@ private fun InlineLoadingState(verticalPadding: androidx.compose.ui.unit.Dp = 48
             .padding(vertical = verticalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = Color.White)
+        CircularProgressIndicator(color = FocusAccent)
     }
 }
 

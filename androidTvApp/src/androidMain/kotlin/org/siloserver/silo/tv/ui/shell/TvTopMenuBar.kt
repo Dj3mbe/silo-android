@@ -68,12 +68,16 @@ import org.siloserver.silo.tv.R
 import org.siloserver.silo.common.ui.components.ProfileAvatarRef
 import org.siloserver.silo.common.ui.components.profileAvatarDisplayText
 import org.siloserver.silo.common.ui.components.rememberProfileAvatarImage
+import org.siloserver.silo.tv.ui.theme.SelectedContent
 import org.siloserver.silo.tv.ui.theme.ChromeSelectedBorder
-import org.siloserver.silo.tv.ui.theme.ChromeSelectedFill
+import org.siloserver.silo.tv.ui.theme.ChromePillFill
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.TvSkyline
+import org.siloserver.silo.tv.ui.theme.glassSheen
 import org.siloserver.silo.tv.ui.theme.navRailLabel
 
 private const val TopMenuInitialPreviewDelayMillis = 180L
@@ -712,13 +716,12 @@ private fun TvTopMenuClock(
             // A dark base under the usual capsule fill keeps the clock readable
             // over bright hero artwork, not just over the dark background.
             .background(Color.Black.copy(alpha = 0.72f), shape)
-            .background(ChromeSelectedFill, shape)
+            .background(ChromePillFill, shape)
             .border(
                 if (isProfileFocused) 2.dp else 1.dp,
-                if (isProfileFocused) SiloOnSurface else Color.White.copy(alpha = 0.40f),
+                if (isProfileFocused) FocusAccent else Color.White.copy(alpha = 0.40f),
                 shape,
             )
-            // LAB: tighter left side than the tab pills (was tabPaddingHorizontal)
             .padding(start = 10.dp, end = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -746,10 +749,10 @@ private fun TvSiloWordmark(
         modifier = Modifier
             .height(TvSkyline.tabPillHeight)
             .background(Color.Black.copy(alpha = 0.72f), shape)
-            .background(ChromeSelectedFill, shape)
+            .background(ChromePillFill, shape)
             .border(
                 if (isFocused) 2.dp else 1.dp,
-                if (isFocused) SiloOnSurface else Color.White.copy(alpha = 0.40f),
+                if (isFocused) FocusAccent else Color.White.copy(alpha = 0.40f),
                 shape,
             )
             .padding(start = 6.dp, end = 3.dp, top = 1.dp, bottom = 1.dp),
@@ -782,7 +785,7 @@ private const val TvSiloWordmarkAspect = 704f / 600f
 /**
  * A center-cluster type tab with inverted-capsule chrome (§5.1):
  * - focused → solid `SiloOnSurface` capsule, text in the background color;
- * - selected (not focused) → low-alpha [ChromeSelectedFill] capsule;
+ * - selected (not focused) → low-alpha [SelectedFill] capsule;
  * - resting → bare label at reduced opacity.
  *
  * The TV surface's own focus scale/halo is disabled (`focusedScale = 1f`, no
@@ -807,17 +810,17 @@ private fun TvTopMenuTab(
     val shape = RoundedCornerShape(percent = 50)
     val containerColor = when {
         isFocused -> SiloOnSurface
-        isSelected -> ChromeSelectedFill
+        isSelected -> SelectedFill
         else -> Color.Transparent
     }
     val borderColor = when {
-        isFocused -> Color.Transparent
+        isFocused -> FocusAccent
         isSelected -> ChromeSelectedBorder
         else -> Color.Transparent
     }
     val textColor = when {
         isFocused -> DarkBackground
-        isSelected -> SiloOnSurface
+        isSelected -> SelectedContent
         else -> SiloOnSurface.copy(alpha = 0.62f)
     }
 
@@ -838,7 +841,7 @@ private fun TvTopMenuTab(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         border = ClickableSurfaceDefaults.border(
             border = Border(border = BorderStroke(1.dp, borderColor), shape = shape),
-            focusedBorder = Border(border = BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         modifier = modifier
             .focusProperties { this.canFocus = canFocus }
@@ -847,6 +850,7 @@ private fun TvTopMenuTab(
     ) {
         Box(
             modifier = Modifier
+                .glassSheen(shape, visible = isSelected && !isFocused)
                 .padding(
                     horizontal = TvSkyline.tabPaddingHorizontal,
                     vertical = TvSkyline.tabPaddingVertical,
@@ -914,7 +918,10 @@ private fun TvTopMenuIconButton(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         border = ClickableSurfaceDefaults.border(
             border = Border(border = BorderStroke(0.dp, Color.Transparent), shape = shape),
-            focusedBorder = Border(border = BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(
+                border = if (fillWhenFocused) BorderStroke(2.dp, FocusAccent) else BorderStroke(0.dp, Color.Transparent),
+                shape = shape,
+            ),
         ),
         modifier = Modifier
             .focusProperties { this.canFocus = canFocus }

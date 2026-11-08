@@ -36,11 +36,14 @@ import androidx.tv.material3.Glow
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import org.siloserver.silo.tv.ui.theme.SelectedContent
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import org.siloserver.silo.tv.ui.theme.DarkOnPrimary
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
-import org.siloserver.silo.tv.ui.theme.SelectedContainer
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.glassSheen
 import org.siloserver.silo.tv.ui.theme.navRailLabel
 
 /** Visual variant of a hero/action pill. */
@@ -99,8 +102,8 @@ fun TvHeroActionPill(
             Color.White.copy(alpha = 0.24f),
         )
         TvPillVariant.Ghost -> Triple(
-            SelectedContainer,
-            Color.White.copy(alpha = 0.85f),
+            SelectedFill,
+            SelectedContent.copy(alpha = 0.90f),
             Color.Transparent,
         )
     }
@@ -118,7 +121,7 @@ fun TvHeroActionPill(
         TvPillVariant.Hollow -> 28.dp
         TvPillVariant.Ghost -> 16.dp
     }
-    val focusedBorderColor = DarkBackground.copy(alpha = 0.86f)
+    val focusedBorderColor = FocusAccent
     val focusedBorderWidth = focusedBorderWidthOverride ?: 2.2.dp
 
     Surface(
@@ -163,7 +166,7 @@ fun TvHeroActionPill(
                 if (isFocused) {
                     Modifier.border(
                         width = focusedBorderWidth,
-                        color = Color.White.copy(alpha = 0.98f),
+                        color = FocusAccent,
                         shape = pillShape,
                     )
                 } else {
@@ -197,6 +200,7 @@ fun TvHeroActionPill(
     ) {
         Row(
             modifier = Modifier
+                .glassSheen(pillShape, visible = variant == TvPillVariant.Ghost && !selected && !isFocused)
                 .height(controlHeight)
                 .padding(horizontal = horizontalPadding),
             verticalAlignment = Alignment.CenterVertically,

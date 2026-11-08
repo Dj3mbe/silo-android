@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -87,6 +88,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 private enum class AudiobookPanel { None, Chapters, Speed, Sleep, More, Skip, Bookmarks, About }
 
@@ -350,7 +352,7 @@ fun TvAudiobookPlayerScreen(
             TvAudiobookPlayerBackdrop()
             when {
                 state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.White)
+                    CircularProgressIndicator(color = FocusAccent)
                 }
                 state.error != null -> TvErrorScreen(
                     message = state.error!!,
@@ -878,6 +880,7 @@ private fun TvAudiobookMoreRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(bg)
+            .then(if (isFocused) Modifier.border(2.dp, FocusAccent, RoundedCornerShape(14.dp)) else Modifier)
             .let { mod -> if (focusRequester != null) mod.focusRequester(focusRequester) else mod }
             .focusable(interactionSource = interactionSource)
             .onPreviewKeyEvent { e ->
