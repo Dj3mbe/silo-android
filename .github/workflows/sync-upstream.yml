@@ -22,5 +22,26 @@ jobs:
           git remote add upstream https://github.com/Silo-Server/silo-android.git
           git fetch upstream main
           git push origin refs/remotes/upstream/main:refs/heads/main
-          git merge upstream/main -m "chore: merge upstream main"
+
+          # Where upstream and this fork change the same lines, keep the fork's version.
+          if ! git merge upstream/main -X ours -m "chore: merge upstream main"; then
+            # Conflicts -X ours cannot settle (a file one side deleted): keep the fork's side.
+            git ls-files -u | cut -f2 | sort -u | while IFS= read -r path; do
+              if git ls-files -u -- "$path" | grep -q '^[0-9]* [0-9a-f]* 2'; then
+                git checkout --ours -- "$path"
+                git add -- "$path"
+              else
+                git rm -q --cached -- "$path"
+              fi
+            done
+            git commit -m "chore: merge upstream main (kept fork changes on conflicts)"
+          fi
+
+          # The fork's BK logo is a PNG named silo_wordmark. Upstream now ships a vector with the
+          # same name, and two drawables with one name break the build, so drop the vector.
+          if [ -f androidTvApp/src/androidMain/res/drawable/silo_wordmark.png ] \
+              && [ -f androidTvApp/src/androidMain/res/drawable/silo_wordmark.xml ]; then
+            git rm -q androidTvApp/src/androidMain/res/drawable/silo_wordmark.xml
+            git commit -m "chore: keep the BK TV logo over the upstream vector"
+          fi
           git push origin custom
