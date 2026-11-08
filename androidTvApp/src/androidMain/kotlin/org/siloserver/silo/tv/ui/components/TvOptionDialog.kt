@@ -21,6 +21,13 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +75,15 @@ fun TvOptionDialog(
     onDismiss: () -> Unit,
     /** The option to focus first, when it is enabled; otherwise the selected or first enabled one. */
     initialFocusKey: String? = null,
+    /**
+     * BK: set when the dialog was opened by a long press. The press that opened
+     * it is still held, so its release would otherwise press the first row.
+     * That release is swallowed once, then the dialog behaves normally.
+     * Off by default, so every other dialog is unchanged.
+     */
+    swallowOpeningRelease: Boolean = false,
 ) {
+    var awaitingOpeningPressRelease by remember { mutableStateOf(swallowOpeningRelease) }
     val firstRowFocus = remember { FocusRequester() }
     val focusedKey = initialFocusKey?.takeIf { key -> options.any { it.key == key && it.enabled } }
         ?: options.firstOrNull { it.selected && it.enabled }?.key
@@ -111,6 +126,17 @@ fun TvOptionDialog(
                     .width(380.dp)
                     .tvDialogSurface(RoundedCornerShape(20.dp))
                     .padding(start = 10.dp, end = 10.dp, top = 14.dp, bottom = 10.dp)
+                    .onPreviewKeyEvent { event ->
+                        val isSelectKey = event.key == Key.DirectionCenter ||
+                            event.key == Key.Enter ||
+                            event.key == Key.NumPadEnter
+                        if (!awaitingOpeningPressRelease || !isSelectKey) {
+                            false
+                        } else {
+                            if (event.type == KeyEventType.KeyUp) awaitingOpeningPressRelease = false
+                            true
+                        }
+                    }
                     .then(rememberTvDialogInitialFocus(firstRowFocus)),
             ) {
                 Text(

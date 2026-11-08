@@ -1767,9 +1767,14 @@ private fun HeroActionRow(
 ) {
     val watchPartyEntry = rememberTvWatchPartyDetailEntry()
     var moreOpen by remember(detail.contentId) { mutableStateOf(false) }
-    // BK: a hold on a Show/Season pill opens this same menu.
+    var moreOpenedByHold by remember(detail.contentId) { mutableStateOf(false) }
+    // BK: a hold on a Show/Season pill opens this same menu. The hold is still
+    // down when it opens, so the dialog swallows that press's release.
     LaunchedEffect(moreActionsRequest) {
-        if (moreActionsRequest > 0) moreOpen = true
+        if (moreActionsRequest > 0) {
+            moreOpenedByHold = true
+            moreOpen = true
+        }
     }
     var playLaunchPending by remember(detail.contentId) { mutableStateOf(false) }
     LaunchedEffect(playLaunchPending) {
@@ -2053,7 +2058,10 @@ private fun HeroActionRow(
                     isActive = false,
                     contentDescription = "More options",
                     titleOnFocus = "More",
-                    onClick = { moreOpen = true },
+                    onClick = {
+                        moreOpenedByHold = false
+                        moreOpen = true
+                    },
                 )
             }
         }
@@ -2181,6 +2189,7 @@ private fun HeroActionRow(
             onDismiss = { moreOpen = false },
             // Shuffle is first and takes focus over a selected toggle below it.
             initialFocusKey = options.firstOrNull()?.key?.takeIf { it.startsWith("shuffle-") },
+            swallowOpeningRelease = moreOpenedByHold,
         )
     }
 

@@ -286,14 +286,12 @@ private fun TvSeriesModeTab(
                             event.key == Key.NumPadEnter
                         if (isSelectKey && event.type == KeyEventType.KeyDown) {
                             if (event.nativeKeyEvent.repeatCount == 0) longPressFired = false
-                            // A held key repeats: remember that this press was a hold.
-                            if (event.nativeKeyEvent.repeatCount > 0) longPressFired = true
-                        } else if (isSelectKey && event.type == KeyEventType.KeyUp && longPressFired) {
-                            // Open the menu on RELEASE. Opening it mid-hold would hand
-                            // focus to its first row while the key is still down, and
-                            // letting go would then press that row.
-                            longPressFired = false
-                            onLongPress()
+                            // A held key repeats: open the menu once per hold, like the
+                            // cards do. The menu swallows this press's release.
+                            if (event.nativeKeyEvent.repeatCount > 0 && !longPressFired) {
+                                longPressFired = true
+                                onLongPress()
+                            }
                         }
                         // Never consumed: the normal press behaves exactly as before.
                         false
