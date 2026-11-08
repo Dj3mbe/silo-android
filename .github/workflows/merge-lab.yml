@@ -1,0 +1,69 @@
+name: Merge lab into a test branch
+# Merges the lab branch into the current custom code on a NEW branch, lab-merge.
+# custom itself is never changed here. Build Lab APKs can then build lab-merge
+# as a test, and custom is updated only after that passes.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE: lab
+      TARGET: lab-merge
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: custom
+          fetch-depth: 0
+      - name: Merge lab
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git switch -c "$TARGET"
+          if ! git merge --no-ff --no-commit "origin/$SOURCE"; then
+            # Both branches carry the same fixes in these four files and lab's
+            # copy is the newer one, so lab's side wins. Anything else stops here.
+            allowed='
+          android-shared/src/androidMain/res/raw/startup_splash.mp4
+          android-shared/src/androidMain/res/raw/startup_splash_hd.mp4
+          androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/components/TvOptionDialog.kt
+          androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/shell/TvTopMenuBar.kt
+          '
+            git diff --name-only --diff-filter=U > "$RUNNER_TEMP/conflicts"
+            while IFS= read -r f; do
+              if ! printf '%s\n' "$allowed" | grep -qxF -- "$f"; then
+                echo "::error::Unexpected conflict in $f. Nothing was pushed."
+                git merge --abort
+                exit 1
+              fi
+            done < "$RUNNER_TEMP/conflicts"
+            while IFS= read -r f; do
+              git checkout --theirs -- "$f"
+              git add -- "$f"
+            done < "$RUNNER_TEMP/conflicts"
+          fi
+      - name: Check the result before committing
+        run: |
+          if git grep --cached -nE '^(<<<<<<<|>>>>>>>) ' -- '*.kt' '*.kts' '*.xml' '*.yml'; then
+            echo "::error::Conflict markers left in the merge."; exit 1
+          fi
+          # The merge must not change any workflow.
+          if ! git diff --cached --quiet HEAD -- .github; then
+            echo "::error::The merge would change a workflow."; exit 1
+          fi
+          # Names that lab removed or renamed must not be used by newer custom code.
+          if git grep --cached -nwE 'SelectedContainer|ChromeSelectedFill|TvPlayerChrome\.Selected|TvPairTile' -- androidTvApp; then
+            echo "::error::Code on custom still uses a name lab removed."; exit 1
+          fi
+          if ! git cat-file -e :androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/settings/TvThemeColorsPanel.kt; then
+            echo "::error::The new Theme Colors file is missing."; exit 1
+          fi
+          if git cat-file -e :androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/settings/TvAccentColorSettings.kt 2>/dev/null; then
+            echo "::error::The old Theme Colors file is still present."; exit 1
+          fi
+      - name: Commit and push the test branch
+        run: |
+          git commit -m "Merge lab into custom (test branch)"
+          git push origin "HEAD:refs/heads/${TARGET}"
