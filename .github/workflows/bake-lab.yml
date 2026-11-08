@@ -1,0 +1,56 @@
+name: Bake lab zips
+# Turns the bk-upload-*.zip files on the lab branch into ordinary source files.
+# It unpacks every zip in the same order Build Lab APKs does, applies the
+# lab-assets overlay the same way, commits the result and deletes the zips.
+# Run it by hand from the Actions tab. It refuses to run on custom or main.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to bake"
+        default: lab
+permissions:
+  contents: write
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: ${{ inputs.branch || 'lab' }}
+      OLD_FILE: androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/settings/TvAccentColorSettings.kt
+      NEW_FILE: androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/settings/TvThemeColorsPanel.kt
+    steps:
+      - name: Refuse custom and main
+        run: |
+          case "$BRANCH" in
+            custom|main) echo "::error::Bake only runs on a lab branch, not $BRANCH."; exit 1 ;;
+          esac
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+      - name: Unpack the zips
+        run: |
+          find . -maxdepth 1 -name 'bk-upload-*.zip' -print0 | sort -z > "$RUNNER_TEMP/zips"
+          if [ ! -s "$RUNNER_TEMP/zips" ]; then
+            echo "::error::No bk-upload zips on $BRANCH, nothing to bake."; exit 1
+          fi
+          while IFS= read -r -d '' z; do
+            echo "unpacking $z"
+            unzip -oq "$z"
+          done < "$RUNNER_TEMP/zips"
+          if [ -d lab-assets ]; then
+            cp -r lab-assets/. .
+            rm -r lab-assets
+          fi
+          while IFS= read -r -d '' z; do rm -- "$z"; done < "$RUNNER_TEMP/zips"
+      - name: Rename the Theme Colors file
+        run: |
+          test -f "$OLD_FILE"
+          test ! -e "$NEW_FILE"
+          mv "$OLD_FILE" "$NEW_FILE"
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Bake the lab zips into the source"
+          git push origin "HEAD:${BRANCH}"
