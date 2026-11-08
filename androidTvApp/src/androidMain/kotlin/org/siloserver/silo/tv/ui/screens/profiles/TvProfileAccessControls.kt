@@ -58,6 +58,7 @@ import org.siloserver.silo.tv.ui.components.TvHeroActionPill
 import org.siloserver.silo.tv.ui.components.TvPillVariant
 import org.siloserver.silo.tv.ui.focus.claimFocusOrReport
 import org.siloserver.silo.tv.ui.shell.TvLibraryTabType
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.util.visibleOnTv
 
 /**
@@ -334,7 +335,7 @@ private fun TvSegment(
                 shape = shape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.9f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),
@@ -383,7 +384,7 @@ private fun TvLibraryCheckRow(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
         border = ClickableSurfaceDefaults.border(
             border = Border(border = BorderStroke(1.dp, Color.Transparent), shape = shape),
-            focusedBorder = Border(border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)), shape = shape),
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         modifier = modifier.fillMaxWidth(),
     ) {

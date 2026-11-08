@@ -81,6 +81,7 @@ import org.siloserver.silo.model.catalog.CatalogFiltersResponse
 import org.siloserver.silo.tv.ui.components.tvOutlinedTextFieldColors
 import org.siloserver.silo.tv.ui.components.tvShowImeOnSelect
 import org.siloserver.silo.tv.ui.components.tvSkylinePanelChrome
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * Sort + Filter controls for the library Browse grid, 1:1 with tvOS
@@ -284,7 +285,7 @@ private fun BrowseControlPill(
                 shape = RoundedCornerShape(999.dp),
             ),
             focusedBorder = Border(
-                border = BorderStroke(0.dp, Color.Transparent),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = RoundedCornerShape(999.dp),
             ),
         ),
@@ -841,6 +842,9 @@ private fun BrowsePanelRow(
             pressedContentColor = Color.Black,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = RoundedCornerShape(8.dp)),
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),

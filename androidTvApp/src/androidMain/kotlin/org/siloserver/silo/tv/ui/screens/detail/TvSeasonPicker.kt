@@ -56,11 +56,16 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.siloserver.silo.model.catalog.Season
 import org.siloserver.silo.model.catalog.isSpecialsForDisplay
+import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.SelectedStroke
 import org.siloserver.silo.tv.ui.theme.TvControlCorner
+import org.siloserver.silo.tv.ui.theme.glassSheen
 
 /**
  * Horizontal scroll of season chips. Mirrors `TVSeasonChipRow` on tvOS:
- * selected reads as a filled white pill, focused fades in a translucent fill,
+ * selected reads as a filled blue pill, focused fades in a translucent fill,
  * idle is outline only. Auto-centers the selected chip when it changes.
  */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -254,14 +259,18 @@ private fun TvSeriesModeTab(
     val fill by animateColorAsState(
         targetValue = when {
             isFocused -> Color.White
-            isSelected -> Color.White.copy(alpha = 0.20f)
+            isSelected -> SelectedFill
             else -> Color.White.copy(alpha = 0.05f)
         },
         animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
         label = "seriesModeFill",
     )
     val labelColor by animateColorAsState(
-        targetValue = if (isFocused) Color.Black else Color.White,
+        targetValue = when {
+            isFocused -> Color.Black
+            isSelected -> SelectedContent
+            else -> Color.White
+        },
         animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
         label = "seriesModeLabel",
     )
@@ -273,7 +282,7 @@ private fun TvSeriesModeTab(
     val borderColor = if (isFocused) {
         Color.Black.copy(alpha = 0.12f)
     } else {
-        Color.White.copy(alpha = if (isSelected) 0.70f else 0.30f)
+        if (isSelected) SelectedStroke else Color.White.copy(alpha = 0.30f)
     }
 
     Box(
@@ -286,14 +295,12 @@ private fun TvSeriesModeTab(
                             event.key == Key.NumPadEnter
                         if (isSelectKey && event.type == KeyEventType.KeyDown) {
                             if (event.nativeKeyEvent.repeatCount == 0) longPressFired = false
-                            // A held key repeats: remember that this press was a hold.
-                            if (event.nativeKeyEvent.repeatCount > 0) longPressFired = true
-                        } else if (isSelectKey && event.type == KeyEventType.KeyUp && longPressFired) {
-                            // Open the menu on RELEASE. Opening it mid-hold would hand
-                            // focus to its first row while the key is still down, and
-                            // letting go would then press that row.
-                            longPressFired = false
-                            onLongPress()
+                            // A held key repeats: open the menu once per hold, like the
+                            // cards do. The menu swallows this press's release.
+                            if (event.nativeKeyEvent.repeatCount > 0 && !longPressFired) {
+                                longPressFired = true
+                                onLongPress()
+                            }
                         }
                         // Never consumed: the normal press behaves exactly as before.
                         false
@@ -319,6 +326,7 @@ private fun TvSeriesModeTab(
             // controls, without changing this row's stable measurements.
             .seriesModeFocusRing(visible = isFocused)
             .background(fill, CircleShape)
+            .glassSheen(CircleShape, visible = isSelected && !isFocused)
             .border(borderWidth, borderColor, CircleShape)
             // tvOS treats Show and each season as focus-driven modes: moving
             // laterally updates the page immediately, without an extra Select.
@@ -352,9 +360,9 @@ private fun Modifier.seriesModeFocusRing(visible: Boolean): Modifier = drawWithC
     drawContent()
     if (!visible) return@drawWithContent
     val inset = 1.5.dp.toPx()
-    val stroke = 1.25.dp.toPx()
+    val stroke = 2.dp.toPx()
     drawRoundRect(
-        color = Color.White.copy(alpha = 0.98f),
+        color = FocusAccent,
         topLeft = Offset(-inset, -inset),
         size = Size(size.width + inset * 2f, size.height + inset * 2f),
         cornerRadius = CornerRadius((size.height + inset * 2f) / 2f),
@@ -365,7 +373,7 @@ private fun Modifier.seriesModeFocusRing(visible: Boolean): Modifier = drawWithC
 /**
  * Squared season chip — mirrors `TVSeasonChip` on tvOS. Owns its own focus
  * visuals (no Surface halo). 22sp label; idle transparent + white@0.25 1.5dp
- * outline; focus white@0.18 fill + scale 1.04; selected white fill / black label.
+ * outline; focus white@0.18 fill + scale 1.04; selected blue fill / white label.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -382,7 +390,7 @@ private fun TvSeasonChip(
 
     val fill by animateColorAsState(
         targetValue = when {
-            isSelected -> Color.White
+            isSelected -> SelectedFill
             isFocused -> Color.White.copy(alpha = 0.18f)
             else -> Color.Transparent
         },
@@ -390,12 +398,16 @@ private fun TvSeasonChip(
         label = "chipFill",
     )
     val labelColor by animateColorAsState(
-        targetValue = if (isSelected) Color.Black else Color.White,
+        targetValue = if (isSelected && !isFocused) SelectedContent else Color.White,
         animationSpec = spring(dampingRatio = 0.72f, stiffness = 380f),
         label = "chipLabel",
     )
-    val borderWidth = if (!isSelected && !isFocused) 1.5.dp else 0.dp
-    val borderColor = if (!isSelected && !isFocused) Color.White.copy(alpha = 0.25f) else Color.Transparent
+    val borderWidth = if (isFocused) 2.dp else 1.5.dp
+    val borderColor = when {
+        isFocused -> FocusAccent
+        isSelected -> SelectedStroke
+        else -> Color.White.copy(alpha = 0.25f)
+    }
     val scale by animateFloatAsState(
         // Apple: focused 1.04, pressed base * 0.97.
         targetValue = (if (isFocused) 1.04f else 1f) * (if (isPressed) 0.97f else 1f),
@@ -410,6 +422,7 @@ private fun TvSeasonChip(
                 scaleY = scale
             }
             .background(fill, shape)
+            .glassSheen(shape, visible = isSelected && !isFocused)
             .border(borderWidth, borderColor, shape)
             .onFocusChanged { isFocused = it.isFocused }
             .clickable(

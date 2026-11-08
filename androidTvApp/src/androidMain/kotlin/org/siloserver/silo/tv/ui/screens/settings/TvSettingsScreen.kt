@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +38,6 @@ import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.MonitorHeart
@@ -49,6 +49,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -140,12 +141,16 @@ import org.siloserver.silo.tv.data.preferences.SubtitleMode
 import org.siloserver.silo.tv.ui.screens.player.TvSubtitleAppearanceOptions
 import org.siloserver.silo.tv.ui.screens.settings.diagnostics.TvDiagnosticsSettingsPane
 import org.siloserver.silo.tv.ui.screens.settings.diagnostics.TvDiagnosticsViewModel
+import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.siloserver.silo.common.watchparty.WatchPartyExperiment
+import org.siloserver.silo.tv.ui.theme.glassSheen
 import org.siloserver.silo.viewmodel.HomeViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -425,6 +430,26 @@ internal fun tvSettingsCategoryForEligibility(
 
 private val LocalSettingsDetailFocusReporter = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 
+/**
+ * Counts the times the category rail has taken focus. Each pane scrolls back to
+ * its top on a change, so the first row, the target of the rail's Right, is
+ * always on screen and built. A list scrolled away from it has no such row,
+ * and Right had nowhere to go.
+ */
+internal val LocalSettingsPaneResetSignal = staticCompositionLocalOf { 0 }
+
+@Composable
+internal fun rememberSettingsPaneListState(): LazyListState {
+    val listState = rememberLazyListState()
+    val resetSignal = LocalSettingsPaneResetSignal.current
+    LaunchedEffect(resetSignal) {
+        // The first run keeps a restored scroll position; the rail's own focus
+        // claim on entry bumps the signal and brings the pane to the top.
+        if (resetSignal > 0) listState.scrollToItem(0)
+    }
+    return listState
+}
+
 // ---------------------------------------------------------------------------
 // Split settings layout (tvOS parity)
 // ---------------------------------------------------------------------------
@@ -497,6 +522,7 @@ private fun SettingsSplitLayout(
     onSubtitleDeviceOverrideEnabledChanged: (Boolean) -> Unit,
     onSubtitleMatchesDeviceChanged: (Boolean) -> Unit,
 ) {
+    var paneResetSignal by remember { mutableIntStateOf(0) }
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -522,6 +548,7 @@ private fun SettingsSplitLayout(
             onCategorySelected = onCategorySelected,
             onEnterCategory = onEnterCategory,
             onRailCategoryFocused = {
+                paneResetSignal++
                 onDetailFocusChanged(false)
                 onRailCategoryFocusChanged(true)
             },
@@ -530,6 +557,7 @@ private fun SettingsSplitLayout(
             modifier = Modifier.width(245.dp),
         )
         SettingsDetailPane(
+            paneResetSignal = paneResetSignal,
             state = state,
             diagnosticsState = diagnosticsState,
             diagnosticsViewModel = diagnosticsViewModel,
@@ -709,7 +737,7 @@ private fun SettingsRailCategoryRow(
             } else {
                 Border.None
             },
-            focusedBorder = Border.None,
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = RowShape),
             pressedBorder = Border.None,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.0f),
@@ -819,6 +847,7 @@ private fun SettingsRailActionRow(
 
 @Composable
 private fun SettingsDetailPane(
+    paneResetSignal: Int,
     state: TvSettingsViewModel.UiState,
     diagnosticsState: org.siloserver.silo.common.diagnostics.DiagnosticsUiState,
     diagnosticsViewModel: TvDiagnosticsViewModel,
@@ -877,7 +906,10 @@ private fun SettingsDetailPane(
     onSubtitleMatchesDeviceChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    CompositionLocalProvider(LocalSettingsDetailFocusReporter provides onDetailFocusChanged) {
+    CompositionLocalProvider(
+        LocalSettingsDetailFocusReporter provides onDetailFocusChanged,
+        LocalSettingsPaneResetSignal provides paneResetSignal,
+    ) {
       Column(modifier = modifier.fillMaxSize()) {
         SettingsPaneHeader(selectedCategory)
 
@@ -1024,6 +1056,7 @@ private fun TvGeneralSettingsPane(
     onUseProfileCardDefault: () -> Unit,
 ) {
     var showPosterSizePicker by remember { mutableStateOf(false) }
+    var showThemeColors by remember { mutableStateOf(false) }
     var showProfileLaunchPicker by remember { mutableStateOf(false) }
     var showHomeSectionsEditor by remember { mutableStateOf(false) }
     val titleArtStore: TitleArtStore = koinInject()
@@ -1034,6 +1067,7 @@ private fun TvGeneralSettingsPane(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -1096,6 +1130,12 @@ private fun TvGeneralSettingsPane(
                         text = "Poster size syncs with other TVs on this profile unless Only This Device is on.",
                     )
                 }
+                SettingsValueRow(
+                    label = "Theme Colors",
+                    value = "",
+                    onClick = { showThemeColors = true },
+                    trailing = { TvThemeColorsRowSamples() },
+                )
             }
         }
         item {
@@ -1129,6 +1169,10 @@ private fun TvGeneralSettingsPane(
         // For You dropdown (Watchlist/Favorites), the profile menu
         // (Watchlist/Favorites/History), Home (Browse), and each library's
         // cascade (Collections). (QA 2026-07-08.)
+    }
+
+    if (showThemeColors) {
+        TvThemeColorsPanel(onDismiss = { showThemeColors = false })
     }
 
     if (showPosterSizePicker) {
@@ -1238,6 +1282,7 @@ private fun TvPlaybackSettingsPane(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -1870,6 +1915,7 @@ private fun TvSubtitleSettingsPane(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -2240,6 +2286,7 @@ private fun TvServerSettingsPane(
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -2339,8 +2386,16 @@ private enum class SubtitlePicker {
 // Reusable picker sheet (centered modal vertical option list)
 // ---------------------------------------------------------------------------
 
-/** [detail] is an optional second line explaining the choice (tvOS `TVSettingsOption.detail`). */
-data class PickerOption(val id: String, val label: String, val detail: String? = null)
+/**
+ * [detail] is an optional second line explaining the choice (tvOS `TVSettingsOption.detail`).
+ * [swatch] draws a colour dot before the label, for colour choices.
+ */
+data class PickerOption(
+    val id: String,
+    val label: String,
+    val detail: String? = null,
+    val swatch: Color? = null,
+)
 
 /**
  * Reusable centered modal option picker. Renders a vertical list with a
@@ -2482,15 +2537,19 @@ private fun TvSettingsPickerOptionRow(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val foreground = if (isFocused) FocusedContent else Color.White
+    val foreground = when {
+        isFocused -> FocusedContent
+        selected -> SelectedContent
+        else -> Color.White
+    }
 
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
         shape = ClickableSurfaceDefaults.shape(shape = RowShape),
         colors = ClickableSurfaceDefaults.colors(
-            // tvOS: the current option keeps the "selected" fill at rest.
-            containerColor = Color.White.copy(alpha = if (selected) 0.14f else 0.07f),
+            // The current option keeps the "selected" fill at rest.
+            containerColor = if (selected) SelectedFill else Color.White.copy(alpha = 0.07f),
             contentColor = Color.White,
             focusedContainerColor = FocusedContainer,
             focusedContentColor = FocusedContent,
@@ -2505,12 +2564,14 @@ private fun TvSettingsPickerOptionRow(
     ) {
         Row(
             modifier = Modifier
+                .glassSheen(RowShape, visible = selected && !isFocused)
                 .fillMaxWidth()
                 .heightIn(min = RowHeight)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            option.swatch?.let { TvColorDot(it) }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = option.label,
@@ -2525,16 +2586,6 @@ private fun TvSettingsPickerOptionRow(
                         color = foreground.copy(alpha = 0.72f),
                     )
                 }
-            }
-            // tvOS TVSettingsPickerOptionRow: a filled check circle trails the
-            // current option.
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Filled.CheckCircle,
-                    contentDescription = null,
-                    tint = foreground,
-                    modifier = Modifier.size(16.dp),
-                )
             }
         }
     }
@@ -2788,6 +2839,7 @@ internal fun SettingsValueRow(
     focusRequester: FocusRequester? = null,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -2823,6 +2875,7 @@ internal fun SettingsValueRow(
                 color = if (isFocused) FocusedContent else Color.White,
                 modifier = Modifier.weight(1f),
             )
+            trailing?.invoke(this)
             if (value.isNotBlank()) {
                 Text(
                     text = value,
@@ -3027,7 +3080,7 @@ private fun invertedRowColors() = ClickableSurfaceDefaults.colors(
 @Composable
 private fun invertedRowBorder() = ClickableSurfaceDefaults.border(
     border = Border(BorderStroke(1.dp, Color.White.copy(alpha = 0.09f)), shape = RowShape),
-    focusedBorder = Border.None,
+    focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = RowShape),
     pressedBorder = Border.None,
 )
 

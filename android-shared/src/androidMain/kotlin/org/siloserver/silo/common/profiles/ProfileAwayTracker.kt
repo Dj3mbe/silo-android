@@ -14,6 +14,11 @@ import org.siloserver.silo.common.player.ActivePlayerHolder
  * Main thread only: the app's main Activity calls it from onStop/onStart, and
  * it reads the shared Media3 player, which lives on the main looper.
  *
+ * A Silo screen that opens above the main Activity (the in-app trailer player)
+ * stops the main Activity, but Silo is still in use, so it reports itself
+ * through [onOverlayScreenStarted] and [onOverlayScreenStopped] and that stop
+ * is not counted as leaving.
+ *
  * @param onLeave runs each time Silo leaves the foreground, with the current
  *   state (the TV empties its Watch Next row under Every Time).
  * @param onAwayIntervalStarted runs with the time a timed away interval runs
@@ -40,6 +45,10 @@ class ProfileAwayTracker(
     private var returningFromBackground = false
     private var watchedPlayer: Player? = null
 
+    // Whether the main Activity is started, and how many overlay screens are.
+    private var hostStarted = false
+    private var overlayScreens = 0
+
     // Playback that stops while Silo is hidden starts the away clock then;
     // playback that resumes stops it. This also catches the video player's
     // own pause, which reaches the session after onStop has run.
@@ -52,6 +61,32 @@ class ProfileAwayTracker(
     }
 
     fun onBackground() {
+        hostStarted = false
+        // An overlay screen has taken over, so Silo is still in the foreground.
+        if (overlayScreens > 0) return
+        leave()
+    }
+
+    /**
+     * A Silo screen opened above the main Activity. Android starts it before it
+     * stops the main Activity, so [onBackground] sees it.
+     */
+    fun onOverlayScreenStarted() {
+        overlayScreens++
+    }
+
+    /**
+     * An overlay screen stopped. When the main Activity is not started either,
+     * the viewer left Silo from the overlay (Home, or another app), so the away
+     * interval starts now. Closing back to the main Activity starts that first,
+     * so it does not. A configuration-change recreation is not leaving.
+     */
+    fun onOverlayScreenStopped(isChangingConfigurations: Boolean) {
+        if (overlayScreens > 0) overlayScreens--
+        if (overlayScreens == 0 && !hostStarted && !isChangingConfigurations) leave()
+    }
+
+    private fun leave() {
         returningFromBackground = true
         onLeave(preferences.state.value)
         markAwayStart()
@@ -60,6 +95,7 @@ class ProfileAwayTracker(
     }
 
     fun onForeground() {
+        hostStarted = true
         watchedPlayer?.removeListener(playbackListener)
         watchedPlayer = null
         // The first start of a process is a launch, which the main Activity's

@@ -39,7 +39,7 @@ fun Modifier.siloFocus(
     interactionSource: MutableInteractionSource,
     shape: Shape = RoundedCornerShape(6.dp),
     focusedScale: Float = 1.06f,
-    borderColor: Color = AccentLavender,
+    borderColor: Color = FocusAccent,
     borderWidth: androidx.compose.ui.unit.Dp = 2.dp,
 ): Modifier = composed {
     val focused by interactionSource.collectIsFocusedAsState()
@@ -79,12 +79,12 @@ fun Modifier.siloFocus(
 }
 
 /**
- * The white outline that marks a focused card, and the Series row's current
+ * The accent outline that marks a focused card, and the Series row's current
  * episode. Mirrors tvOS `TVCardOutline` and `TVCardOutlineButtonStyle`.
  */
 object CardOutline {
     val width = 2.dp
-    val color = Color.White.copy(alpha = 0.70f)
+    val color: Color get() = FocusAccent
     /** A small lift; tvOS uses the same 5% on every card. */
     const val FocusedScale = 1.05f
     /** The focused card's drop shadow, in place of a light glow. */

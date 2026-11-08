@@ -77,6 +77,7 @@ import org.siloserver.silo.tv.ui.focus.TvControlState
 import org.siloserver.silo.tv.ui.focus.tvControlSemantics
 import org.siloserver.silo.tv.ui.focus.tvModalFocusBoundary
 import org.siloserver.silo.tv.ui.screens.auth.QrCodePanel
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.SiloSecondaryText
 import org.siloserver.silo.watchtogether.WatchPartyEligibility
@@ -704,7 +705,7 @@ private fun TvPartySuggestionCard(
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
             border = ClickableSurfaceDefaults.border(
                 border = Border(BorderStroke(1.dp, PartyChromeBorder), shape = shape),
-                focusedBorder = Border(BorderStroke(3.dp, SiloOnSurface), shape = shape),
+                focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
             ),
             glow = ClickableSurfaceDefaults.glow(
                 focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.22f), elevation = 16.dp),
@@ -789,7 +790,7 @@ private fun TvPartySuggestCard(
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
             border = ClickableSurfaceDefaults.border(
                 border = Border(BorderStroke(0.dp, Color.Transparent), shape = shape),
-                focusedBorder = Border(BorderStroke(2.dp, SiloOnSurface), shape = shape),
+                focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
             ),
             modifier = modifier.tvControlSemantics(state),
         ) {

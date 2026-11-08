@@ -69,6 +69,7 @@ import org.siloserver.silo.tv.ui.focus.TvRestoreFocusOnModalDismiss
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 import org.siloserver.silo.tv.ui.focus.tvModalFocusBoundary
 import org.siloserver.silo.tv.ui.theme.DarkBackground
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
@@ -556,7 +557,7 @@ private fun ChromeIcon(icon: ImageVector, label: String, onClick: () -> Unit, mo
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
         border = ClickableSurfaceDefaults.border(
-            focusedBorder = Border(BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         modifier = modifier.size(TvSkyline.barIconSize),
     ) {

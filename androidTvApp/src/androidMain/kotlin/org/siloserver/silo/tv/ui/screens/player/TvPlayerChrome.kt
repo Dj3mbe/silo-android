@@ -32,8 +32,6 @@ internal object TvPlayerChrome {
     val ButtonRest = Color.Black.copy(alpha = 0.38f)
     val ButtonRing = Color.White.copy(alpha = 0.24f)
 
-    /** A selected row that does not have focus. */
-    val Selected = Color.White.copy(alpha = 0.075f)
     val Chip = Color.White.copy(alpha = 0.10f)
 
     /** Destructive: bright red text at rest, a red fill on focus. */

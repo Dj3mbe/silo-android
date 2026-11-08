@@ -29,6 +29,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.siloserver.silo.tv.cast.TvSiloCastReceiver
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * Full-screen takeover while a phone controls the TV with nothing playing:
@@ -63,7 +64,7 @@ fun TvSiloCastStandbyView(
             ) {
                 if (preparing != null) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = FocusAccent,
                         strokeWidth = 5.dp,
                         modifier = Modifier.size(76.dp),
                     )

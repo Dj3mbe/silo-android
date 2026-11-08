@@ -56,6 +56,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.TvControlCorner
 
@@ -298,7 +299,7 @@ internal fun SquaredPillSurface(
     )
 
     // --- Compact focus treatment (shared by both pills) ---
-    val focusOutlineColor = if (primary) Color.White.copy(alpha = 0.94f) else Color.White.copy(alpha = 0.98f)
+    val focusOutlineColor = FocusAccent
     val focusOutlineShape = if (capsule) RoundedCornerShape(percent = 50) else RoundedCornerShape(TvControlCorner + 2.dp)
     val shadowOpacity by animateFloatAsState(
         targetValue = if (isFocused) 0.24f else 0.14f,
@@ -352,10 +353,11 @@ internal fun SquaredPillSurface(
             )
             // Compact focus outline, half-scale port of tvOS width 2.5 / inset 3.
             .focusRing(
-                visible = isFocused && !stableHero,
+                visible = isFocused,
                 color = focusOutlineColor,
-                width = 1.25.dp,
-                inset = 1.5.dp,
+                width = if (stableHero) 2.5.dp else 2.dp,
+                // Hero buttons draw the ring inside their edge so a clipping parent can't cut it.
+                inset = if (stableHero) (-1.25).dp else 1.5.dp,
                 corner = if (capsule) 50.dp else TvControlCorner + 2.dp,
             )
             .background(fill, shape)
@@ -483,11 +485,11 @@ fun TvSquareToggleButton(
             )
             // Focus ring: white@0.96, 3dp, inset −2.5.
             .focusRing(
-                visible = isFocused && titleOnFocus == null,
-                color = Color.White.copy(alpha = 0.96f),
-                width = 1.5.dp,
-                inset = 2.5.dp,
-                corner = 22.dp,
+                visible = isFocused,
+                color = FocusAccent,
+                width = if (titleOnFocus == null) 2.dp else 2.5.dp,
+                inset = if (titleOnFocus == null) 2.5.dp else (-1.25).dp,
+                corner = if (titleOnFocus == null) 22.dp else 50.dp,
             )
             .background(fill, shape)
             .then(if (titleOnFocus != null) Modifier.clip(shape) else Modifier)

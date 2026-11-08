@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
 import org.siloserver.silo.tv.ui.components.TvSeekIntervalIcon
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * Bottom transport row mirroring `iosApp/.../tvOS/TVPlayerTransportCluster.swift`.
@@ -217,7 +218,10 @@ private fun TransportIconButton(
             .then(if (isFocused) Modifier.shadow(10.dp, shape, clip = false) else Modifier)
             .clip(shape)
             .background(fill)
-            .then(if (isFocused) Modifier else Modifier.border(1.dp, TvPlayerChrome.ButtonRing, shape))
+            .then(
+                if (isFocused) Modifier.border(2.dp, FocusAccent, shape)
+                else Modifier.border(1.dp, TvPlayerChrome.ButtonRing, shape),
+            )
             .animateContentSize(animationSpec = tween(160))
             .let { mod -> if (focusRequester != null) mod.focusRequester(focusRequester) else mod }
             .focusProperties {

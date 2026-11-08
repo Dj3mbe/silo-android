@@ -54,6 +54,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import org.siloserver.silo.tv.ui.focus.TvControlState
 import org.siloserver.silo.tv.ui.focus.tvControlSemantics
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
@@ -252,7 +253,7 @@ private fun PinKey(
                 shape = keyShape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(0.dp, Color.Transparent),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = keyShape,
             ),
         ),

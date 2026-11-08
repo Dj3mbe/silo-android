@@ -155,6 +155,7 @@ import org.siloserver.silo.tv.ui.screens.watchparty.rememberTvWatchPartyDetailEn
 import org.siloserver.silo.tv.ui.screens.watchparty.rememberTvWatchPartyDetailOption
 import org.siloserver.silo.tv.ui.screens.watchparty.rememberTvWatchPartyPlayGuard
 import org.siloserver.silo.tv.ui.screens.watchparty.tvWatchPartyItem
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.watchtogether.WatchPartyDestination
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.TvSmoothBringIntoViewSpec
@@ -1767,9 +1768,14 @@ private fun HeroActionRow(
 ) {
     val watchPartyEntry = rememberTvWatchPartyDetailEntry()
     var moreOpen by remember(detail.contentId) { mutableStateOf(false) }
-    // BK: a hold on a Show/Season pill opens this same menu.
+    var moreOpenedByHold by remember(detail.contentId) { mutableStateOf(false) }
+    // BK: a hold on a Show/Season pill opens this same menu. The hold is still
+    // down when it opens, so the dialog swallows that press's release.
     LaunchedEffect(moreActionsRequest) {
-        if (moreActionsRequest > 0) moreOpen = true
+        if (moreActionsRequest > 0) {
+            moreOpenedByHold = true
+            moreOpen = true
+        }
     }
     var playLaunchPending by remember(detail.contentId) { mutableStateOf(false) }
     LaunchedEffect(playLaunchPending) {
@@ -2053,7 +2059,10 @@ private fun HeroActionRow(
                     isActive = false,
                     contentDescription = "More options",
                     titleOnFocus = "More",
-                    onClick = { moreOpen = true },
+                    onClick = {
+                        moreOpenedByHold = false
+                        moreOpen = true
+                    },
                 )
             }
         }
@@ -2181,6 +2190,7 @@ private fun HeroActionRow(
             onDismiss = { moreOpen = false },
             // Shuffle is first and takes focus over a selected toggle below it.
             initialFocusKey = options.firstOrNull()?.key?.takeIf { it.startsWith("shuffle-") },
+            swallowOpeningRelease = moreOpenedByHold,
         )
     }
 
@@ -2368,7 +2378,7 @@ private fun EpisodesSection(
                             .padding(horizontal = TvDetailHorizontalInset, vertical = 24.dp),
                         contentAlignment = Alignment.CenterStart,
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = FocusAccent)
                     }
                 }
                 // A season that legitimately has zero episodes (or a load that failed
@@ -2623,7 +2633,7 @@ private fun TvAudiobookDetailActionRow(
                 shape = RoundedCornerShape(8.dp),
             ),
             focusedBorder = Border(
-                border = BorderStroke(1.5.dp, Color.Black.copy(alpha = 0.18f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = RoundedCornerShape(8.dp),
             ),
         ),

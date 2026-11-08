@@ -76,6 +76,7 @@ import org.siloserver.silo.tv.ui.components.TvHeroActionPill
 import org.siloserver.silo.tv.ui.components.TvPillVariant
 import org.siloserver.silo.tv.ui.components.TvTextInputDialog
 import org.siloserver.silo.tv.ui.focus.claimFocusOrReport
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 private val ProfileEditorHeaderPadding = 80.dp
 private val ProfileEditorContentPadding = 80.dp
@@ -648,7 +649,7 @@ private fun TvProfileTextEntryField(
                 shape = shape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.62f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),
@@ -707,7 +708,7 @@ internal fun TvChoiceChip(
                 shape = shape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.75f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),
@@ -849,7 +850,7 @@ internal fun TvSwitchRow(
                 shape = shape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),

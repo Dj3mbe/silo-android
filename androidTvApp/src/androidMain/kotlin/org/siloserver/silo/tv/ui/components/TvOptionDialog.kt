@@ -1,5 +1,6 @@
 package org.siloserver.silo.tv.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -16,18 +17,23 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
@@ -38,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.window.PopupPositionProvider
+import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
@@ -45,6 +52,10 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import org.siloserver.silo.tv.ui.screens.player.TvPlayerChrome
 import org.siloserver.silo.tv.ui.screens.player.TvPlayerType
+import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.theme.glassSheen
 
 data class TvDialogOption(
     val key: String,
@@ -68,7 +79,15 @@ fun TvOptionDialog(
     onDismiss: () -> Unit,
     /** The option to focus first, when it is enabled; otherwise the selected or first enabled one. */
     initialFocusKey: String? = null,
+    /**
+     * BK: set when the dialog was opened by a long press. The press that opened
+     * it is still held, so its release would otherwise press the first row.
+     * That release is swallowed once, then the dialog behaves normally.
+     * Off by default, so every other dialog is unchanged.
+     */
+    swallowOpeningRelease: Boolean = false,
 ) {
+    var awaitingOpeningPressRelease by remember { mutableStateOf(swallowOpeningRelease) }
     val firstRowFocus = remember { FocusRequester() }
     val focusedKey = initialFocusKey?.takeIf { key -> options.any { it.key == key && it.enabled } }
         ?: options.firstOrNull { it.selected && it.enabled }?.key
@@ -111,6 +130,17 @@ fun TvOptionDialog(
                     .width(380.dp)
                     .tvDialogSurface(RoundedCornerShape(20.dp))
                     .padding(start = 10.dp, end = 10.dp, top = 14.dp, bottom = 10.dp)
+                    .onPreviewKeyEvent { event ->
+                        val isSelectKey = event.key == Key.DirectionCenter ||
+                            event.key == Key.Enter ||
+                            event.key == Key.NumPadEnter
+                        if (!awaitingOpeningPressRelease || !isSelectKey) {
+                            false
+                        } else {
+                            if (event.type == KeyEventType.KeyUp) awaitingOpeningPressRelease = false
+                            true
+                        }
+                    }
                     .then(rememberTvDialogInitialFocus(firstRowFocus)),
             ) {
                 Text(
@@ -178,8 +208,9 @@ private fun TvOptionDialogRow(
     val shape = RoundedCornerShape(10.dp)
     val content = when {
         isFocused -> TvPlayerChrome.Ink
-        enabled -> TvPlayerChrome.Paper
-        else -> TvPlayerChrome.Faint
+        !enabled -> TvPlayerChrome.Faint
+        selected -> SelectedContent
+        else -> TvPlayerChrome.Paper
     }
 
     Surface(
@@ -189,7 +220,7 @@ private fun TvOptionDialogRow(
         shape = ClickableSurfaceDefaults.shape(shape = shape),
         colors = ClickableSurfaceDefaults.colors(
             // The current choice keeps a soft fill at rest; focus inverts to Paper.
-            containerColor = if (selected) TvPlayerChrome.Selected else Color.Transparent,
+            containerColor = if (selected) SelectedFill else Color.Transparent,
             contentColor = content,
             focusedContainerColor = TvPlayerChrome.Paper,
             focusedContentColor = TvPlayerChrome.Ink,
@@ -199,6 +230,9 @@ private fun TvOptionDialogRow(
             disabledContentColor = TvPlayerChrome.Faint,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
+        ),
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 38.dp)
@@ -206,17 +240,17 @@ private fun TvOptionDialogRow(
     ) {
         Row(
             modifier = Modifier
+                .glassSheen(shape, visible = selected && !isFocused)
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 9.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            // Leading slot, kept even when empty so titles line up: a check
-            // for the current choice, an icon for an action.
+            // Leading slot, kept even when empty so titles line up: an icon for
+            // an action. The current choice is marked by its blue row fill.
             Box(modifier = Modifier.width(28.dp), contentAlignment = Alignment.CenterStart) {
-                val leadingIcon = icon ?: if (selected) Icons.Rounded.Check else null
-                if (leadingIcon != null) {
+                if (icon != null) {
                     Icon(
-                        imageVector = leadingIcon,
+                        imageVector = icon,
                         contentDescription = null,
                         tint = content,
                         modifier = Modifier.size(19.dp),

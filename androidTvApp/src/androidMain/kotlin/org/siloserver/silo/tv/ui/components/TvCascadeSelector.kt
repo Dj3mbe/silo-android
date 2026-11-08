@@ -1,6 +1,7 @@
 package org.siloserver.silo.tv.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,7 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
@@ -62,6 +62,10 @@ import androidx.tv.material3.Text
 import org.siloserver.silo.model.personal.UserLibrary
 import org.siloserver.silo.tv.ui.shell.TvLibraryPill
 import org.siloserver.silo.tv.ui.shell.TvLibraryTabType
+import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.glassSheen
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import kotlinx.coroutines.delay
@@ -612,8 +616,9 @@ private fun CascadeLibraryRow(
     CascadeRowChrome(
         icon = type.icon,
         title = library.name,
-        trailingIcon = if (isCurrent) Icons.Filled.Check else Icons.Filled.ChevronRight,
+        trailingIcon = Icons.Filled.ChevronRight,
         isFocused = isFocused,
+        isCurrent = isCurrent,
         interactionSource = interactionSource,
         focusRequester = focusRequester,
         focusable = entersPanel,
@@ -755,15 +760,34 @@ private fun CascadeRowChrome(
     verticalPadding: androidx.compose.ui.unit.Dp,
     cornerRadius: androidx.compose.ui.unit.Dp,
     onKey: (androidx.compose.ui.input.key.KeyEvent) -> Boolean,
+    isCurrent: Boolean = false,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
-    val contentColor = if (isFocused) DarkBackground else SiloOnSurface.copy(alpha = 0.9f)
+    val contentColor = when {
+        isFocused -> DarkBackground
+        isCurrent -> SelectedContent
+        else -> SiloOnSurface.copy(alpha = 0.9f)
+    }
 
     var rowModifier = Modifier
         .fillMaxWidth()
         .padding(vertical = 2.dp)
         .clip(shape)
-        .background(if (isFocused) SiloOnSurface else Color.Transparent)
+        .background(
+            when {
+                isFocused -> SiloOnSurface
+                isCurrent -> SelectedFill
+                else -> Color.Transparent
+            },
+        )
+        .glassSheen(shape, visible = isCurrent && !isFocused)
+        .then(
+            if (isFocused) {
+                Modifier.border(2.dp, FocusAccent, shape)
+            } else {
+                Modifier
+            },
+        )
 
     if (onTopChanged != null) {
         rowModifier = rowModifier.onGloballyPositioned { onTopChanged(it.positionInParent().y) }

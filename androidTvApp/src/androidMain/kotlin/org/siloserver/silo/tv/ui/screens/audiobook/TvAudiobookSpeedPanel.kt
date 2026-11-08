@@ -1,6 +1,7 @@
 package org.siloserver.silo.tv.ui.screens.audiobook
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlin.math.abs
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 private val SPEED_PRESETS = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
 private const val SPEED_STEP = 0.05f
@@ -105,6 +107,7 @@ private fun SpeedFineAdjustRow(
             .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(bg)
+            .then(if (isFocused) Modifier.border(2.dp, FocusAccent, RoundedCornerShape(8.dp)) else Modifier)
             .focusRequester(focusRequester)
             .focusable(interactionSource = interactionSource)
             .onPreviewKeyEvent { event ->
