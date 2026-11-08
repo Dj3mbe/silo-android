@@ -60,6 +60,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import org.siloserver.silo.tv.ui.theme.DarkSurfaceElevated
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 
@@ -317,7 +318,7 @@ private fun TvMenuRow(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(1.5.dp, Color.White),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = shape,
             ),
         ),

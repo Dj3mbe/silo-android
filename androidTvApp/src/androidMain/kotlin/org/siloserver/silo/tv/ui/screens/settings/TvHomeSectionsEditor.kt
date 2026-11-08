@@ -64,6 +64,7 @@ import org.siloserver.silo.tv.ui.focus.TvContentInitialFocusMaxAttempts
 import org.siloserver.silo.tv.ui.focus.TvFrameRelocationMaxAttempts
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 import org.siloserver.silo.tv.ui.screens.home.normalizeTvHomeSections
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 import org.siloserver.silo.viewmodel.HomeViewModel
@@ -453,7 +454,7 @@ private fun HomeSectionsControlButton(
         ),
         border = ClickableSurfaceDefaults.border(
             border = Border(BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)), shape = shape),
-            focusedBorder = Border.None,
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
             pressedBorder = Border.None,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),

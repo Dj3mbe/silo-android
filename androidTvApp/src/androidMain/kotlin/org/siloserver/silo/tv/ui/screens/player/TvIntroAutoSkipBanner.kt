@@ -38,6 +38,7 @@ import org.siloserver.silo.domain.player.IntroAutoSkipController
 import org.siloserver.silo.domain.player.IntroAutoSkipState
 import org.siloserver.silo.tv.R
 import org.siloserver.silo.tv.ui.focus.rememberTvContentInitialFocus
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * TV variant of the phone's `IntroAutoSkipBanner` — the single intro-skip pill.
@@ -159,7 +160,7 @@ private fun TvIntroPromptPill(
     )
 
     val shape = RoundedCornerShape(28.dp)
-    val borderColor = if (isFocused) Color.White else Color.White.copy(alpha = 0.25f)
+    val borderColor = if (isFocused) FocusAccent else Color.White.copy(alpha = 0.25f)
     Column(horizontalAlignment = Alignment.End) {
         if (caption != null) {
             Text(

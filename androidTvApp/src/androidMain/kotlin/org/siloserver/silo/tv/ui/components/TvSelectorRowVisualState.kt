@@ -1,8 +1,11 @@
 package org.siloserver.silo.tv.ui.components
 
 import androidx.compose.ui.graphics.Color
+import org.siloserver.silo.tv.ui.theme.SelectedContent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.SelectedStroke
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 
 internal data class TvSelectorRowVisualState(
@@ -30,9 +33,9 @@ internal fun tvSelectorRowVisualState(
         FocusedContent.copy(alpha = 0.22f),
     )
     selected -> TvSelectorRowVisualState(
-        SiloOnSurface.copy(alpha = 0.075f),
-        SiloOnSurface,
-        SiloOnSurface.copy(alpha = 0.28f),
+        SelectedFill,
+        SelectedContent,
+        SelectedStroke.copy(alpha = 0.55f),
     )
     else -> TvSelectorRowVisualState(Color.Transparent, SiloOnSurface, Color.Transparent)
 }

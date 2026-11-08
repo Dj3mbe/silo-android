@@ -129,6 +129,10 @@ import org.siloserver.silo.tv.ui.focus.TvFocusLog
 import org.siloserver.silo.tv.ui.focus.TvFrameRelocationMaxAttempts
 import org.siloserver.silo.tv.ui.focus.rememberTvContentInitialFocus
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
+import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.glassSheen
 
 // Geometry follows the options mockup on a 960×540dp screen: a capsule tab
 // rail 24dp from the top, and a smoked panel 10dp under it, 780dp (81%) wide
@@ -757,16 +761,16 @@ private fun HudTabPill(
     // The rail carries the ground, so an idle tab is just its label. Selection
     // follows focus, so a focused tab is always the selected one; a selected
     // tab that is NOT focused means focus is down in the pane, and it keeps a
-    // white-16% marker so the one Paper element on screen is the control
+    // blue marker so the one Paper element on screen is the control
     // you're on. Focus is an inversion, never a scale.
     val bg = when {
         isFocused -> TvPlayerChrome.Paper
-        isSelected -> Color.White.copy(alpha = 0.16f)
+        isSelected -> SelectedFill
         else -> Color.Transparent
     }
     val fg = when {
         isFocused -> TvPlayerChrome.Ink
-        isSelected -> TvPlayerChrome.Paper
+        isSelected -> SelectedContent
         else -> TvPlayerChrome.Graphite
     }
 
@@ -775,6 +779,8 @@ private fun HudTabPill(
             .height(HudTabHeight)
             .clip(CircleShape)
             .background(bg)
+            .glassSheen(CircleShape, visible = isSelected && !isFocused)
+            .then(if (isFocused) Modifier.border(2.dp, FocusAccent, CircleShape) else Modifier)
             .focusRequester(focusRequester)
             .focusable(enabled = enabled, interactionSource = interactionSource)
             .padding(horizontal = 15.dp),
@@ -2020,7 +2026,7 @@ private fun HudSubtitleTrackRow(
                 }
             }
             .graphicsLayer { alpha = rowAlpha }
-            .hudRow(colors.background)
+            .hudRow(colors.background, isFocused, row.checked)
             .clickable(
                 enabled = enabled && !row.unplayable,
                 interactionSource = interactionSource,
@@ -2030,7 +2036,7 @@ private fun HudSubtitleTrackRow(
             .padding(horizontal = HudRowPadding, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        HudCheckSlot(checked = row.checked, tint = colors.content)
+        HudCheckSlot()
         // The title side takes what the detail leaves; the detail is short
         // ("SRT · External") and capped, so a long name ellipsizes first.
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -2216,7 +2222,7 @@ private fun StyleColorSwatch(
             .size(32.dp)
             .border(
                 width = 2.dp,
-                color = if (isFocused) TvPlayerChrome.Paper else Color.Transparent,
+                color = if (isFocused) FocusAccent else Color.Transparent,
                 shape = CircleShape,
             )
             .padding(4.dp)
@@ -2312,7 +2318,7 @@ private fun HudActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .hudRow(colors.background)
+            .hudRow(colors.background, isFocused)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
             .padding(horizontal = HudRowPadding, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -2347,10 +2353,10 @@ private fun hudRowColors(focused: Boolean, current: Boolean = false): HudRowColo
         chevron = TvPlayerChrome.Ink.copy(alpha = 0.45f),
     )
     current -> HudRowColors(
-        background = TvPlayerChrome.Selected,
-        content = TvPlayerChrome.Paper,
-        detail = TvPlayerChrome.Graphite,
-        chevron = TvPlayerChrome.Faint,
+        background = SelectedFill,
+        content = SelectedContent,
+        detail = SelectedContent.copy(alpha = 0.72f),
+        chevron = SelectedContent.copy(alpha = 0.55f),
     )
     else -> HudRowColors(
         background = Color.Transparent,
@@ -2361,24 +2367,17 @@ private fun hudRowColors(focused: Boolean, current: Boolean = false): HudRowColo
 }
 
 /** The shared row ground: 34dp tall, a 10dp radius, filled by state. */
-private fun Modifier.hudRow(background: Color): Modifier =
+private fun Modifier.hudRow(background: Color, focused: Boolean = false, current: Boolean = false): Modifier =
     heightIn(min = HudRowHeight)
         .clip(RoundedCornerShape(HudRowCorner))
         .background(background)
+        .glassSheen(RoundedCornerShape(HudRowCorner), visible = current && !focused)
+        .then(if (focused) Modifier.border(2.dp, FocusAccent, RoundedCornerShape(HudRowCorner)) else Modifier)
 
-/** The leading check column, kept even when empty so labels line up. */
+/** The leading column, kept so labels line up; the current row is marked by its blue fill. */
 @Composable
-private fun HudCheckSlot(checked: Boolean, tint: Color) {
-    Box(modifier = Modifier.width(HudCheckColumn + 8.dp), contentAlignment = Alignment.CenterStart) {
-        if (checked) {
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(19.dp),
-            )
-        }
-    }
+private fun HudCheckSlot() {
+    Spacer(modifier = Modifier.width(HudCheckColumn + 8.dp))
 }
 
 @Composable
@@ -2576,6 +2575,8 @@ private fun HudChapterRow(
             .heightIn(min = 35.dp)
             .clip(RoundedCornerShape(HudRowCorner))
             .background(colors.background)
+            .glassSheen(RoundedCornerShape(HudRowCorner), visible = isCurrent && !isFocused)
+            .then(if (isFocused) Modifier.border(2.dp, FocusAccent, RoundedCornerShape(HudRowCorner)) else Modifier)
             .clickable(enabled = true, interactionSource = interactionSource, indication = null) { onSelect() }
             .semantics { selected = isCurrent },
     ) {
@@ -2788,7 +2789,7 @@ internal fun HudFocusedSettingRow(
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .then(if (entryFocusRequester != null) Modifier.focusRequester(entryFocusRequester) else Modifier)
             .graphicsLayer { alpha = rowAlpha }
-            .hudRow(colors.background)
+            .hudRow(colors.background, isFocused)
             .clickable(
                 enabled = enabled,
                 interactionSource = interactionSource,
@@ -2948,7 +2949,7 @@ private fun HudPickerOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { alpha = rowAlpha }
-            .hudRow(colors.background)
+            .hudRow(colors.background, isFocused, isSelected)
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .bringIntoViewRequester(bringIntoViewRequester)
             .onFocusChanged { state ->
@@ -2962,7 +2963,7 @@ private fun HudPickerOptionRow(
             .padding(horizontal = HudRowPadding, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        HudCheckSlot(checked = isSelected, tint = colors.content)
+        HudCheckSlot()
         if (option.colorHex != null) {
             Box(
                 modifier = Modifier

@@ -15,6 +15,8 @@ import org.siloserver.silo.common.diagnostics.DiagnosticsStartup
 import org.siloserver.silo.common.diagnostics.diagnosticsModule
 import org.siloserver.silo.di.sharedModules
 import org.siloserver.silo.tv.di.androidTvModule
+import org.siloserver.silo.tv.ui.theme.TvAccent
+import org.siloserver.silo.tv.ui.theme.TvSelected
 import org.siloserver.silo.tv.watchnext.TvWorkerFactory
 import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
@@ -34,6 +36,9 @@ import org.siloserver.silo.common.images.buildSiloImageLoader
 class SiloTvApplication : Application(), Configuration.Provider, SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
+        // The accent colour must be known before the first screen draws.
+        TvAccent.init(this)
+        TvSelected.init(this)
         DiagnosticsStartup.installCrashCapture(this)
         val koinApp = startKoin {
             androidContext(this@SiloTvApplication)

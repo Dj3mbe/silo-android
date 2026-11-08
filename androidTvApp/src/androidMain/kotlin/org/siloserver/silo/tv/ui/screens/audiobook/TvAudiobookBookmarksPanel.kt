@@ -1,7 +1,9 @@
 package org.siloserver.silo.tv.ui.screens.audiobook
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.tv.material3.Border
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 import org.siloserver.silo.tv.ui.focus.claimFocusOrReport
 import org.siloserver.silo.tv.ui.focus.TvObservedFocusResult
@@ -40,6 +43,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import org.siloserver.silo.model.audiobook.AudiobookBookmark
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * TV audiobook Bookmarks overlay. Mirrors the phone's bookmarks sheet over the
@@ -131,6 +135,7 @@ private fun BookmarkActionRow(
             .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isFocused) Color.White else Color.White.copy(alpha = 0.12f))
+            .then(if (isFocused) Modifier.border(2.dp, FocusAccent, RoundedCornerShape(8.dp)) else Modifier)
             .focusRequester(focusRequester)
             .focusable(interactionSource = interactionSource)
             .combinedClickable(
@@ -178,6 +183,9 @@ private fun BookmarkRow(
             pressedContentColor = Color.Black,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = RoundedCornerShape(8.dp)),
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),

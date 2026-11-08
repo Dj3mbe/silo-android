@@ -52,6 +52,7 @@ import org.siloserver.silo.tv.ui.components.TvCatalogGrid
 import org.siloserver.silo.tv.ui.components.TvErrorScreen
 import org.siloserver.silo.tv.ui.components.TvFilterSheet
 import org.siloserver.silo.tv.ui.shell.TvTopMenuLayout
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.tvPresetGridColumns
 import org.koin.compose.viewmodel.koinViewModel
@@ -439,7 +440,7 @@ private fun FilterEntryButton(
                 shape = RoundedCornerShape(12.dp),
             ),
             focusedBorder = Border(
-                border = BorderStroke(0.dp, Color.Transparent),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = RoundedCornerShape(12.dp),
             ),
         ),
@@ -539,7 +540,7 @@ private fun FilterChoiceChip(
                 shape = RoundedCornerShape(12.dp),
             ),
             focusedBorder = Border(
-                border = BorderStroke(0.dp, Color.Transparent),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = RoundedCornerShape(12.dp),
             ),
         ),
@@ -568,7 +569,7 @@ private fun InlineLoadingState(verticalPadding: androidx.compose.ui.unit.Dp = 48
             .padding(vertical = verticalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = Color.White)
+        CircularProgressIndicator(color = FocusAccent)
     }
 }
 

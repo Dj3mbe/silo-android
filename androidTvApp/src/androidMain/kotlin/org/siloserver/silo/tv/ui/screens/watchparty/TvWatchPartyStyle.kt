@@ -76,6 +76,7 @@ import org.siloserver.silo.tv.ui.focus.tvControlSemantics
 import org.siloserver.silo.tv.ui.focus.tvModalFocusBoundary
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import org.siloserver.silo.tv.ui.theme.DarkSurfaceElevated
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
@@ -270,7 +271,7 @@ internal fun TvPartyButton(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
         border = ClickableSurfaceDefaults.border(
             border = Border(BorderStroke(1.dp, restBorder), shape = shape),
-            focusedBorder = Border(BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         glow = ClickableSurfaceDefaults.glow(
             focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.22f), elevation = 16.dp),
@@ -328,7 +329,7 @@ internal fun TvPartyCodePill(code: String, onClick: () -> Unit, modifier: Modifi
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
         border = ClickableSurfaceDefaults.border(
             border = Border(BorderStroke(1.dp, PartyChromeBorder), shape = shape),
-            focusedBorder = Border(BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         glow = ClickableSurfaceDefaults.glow(
             focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.22f), elevation = 16.dp),
@@ -389,7 +390,7 @@ internal fun TvPartyOptionsButton(onClick: () -> Unit, modifier: Modifier = Modi
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
         border = ClickableSurfaceDefaults.border(
             border = Border(BorderStroke(1.dp, PartyChromeBorder), shape = shape),
-            focusedBorder = Border(BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         glow = ClickableSurfaceDefaults.glow(
             focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.22f), elevation = 16.dp),
@@ -614,7 +615,7 @@ internal fun TvPartyInviteSeat(onClick: () -> Unit, modifier: Modifier = Modifie
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
             border = ClickableSurfaceDefaults.border(
                 border = Border(BorderStroke(size * 0.035f, Color.White.copy(alpha = 0.22f)), shape = CircleShape),
-                focusedBorder = Border(BorderStroke(0.dp, Color.Transparent), shape = CircleShape),
+                focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = CircleShape),
             ),
             glow = ClickableSurfaceDefaults.glow(
                 focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.22f), elevation = 16.dp),
@@ -712,7 +713,7 @@ internal fun TvPartyOptionRow(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
         border = ClickableSurfaceDefaults.border(
             border = Border(BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)), shape = shape),
-            focusedBorder = Border(BorderStroke(0.dp, Color.Transparent), shape = shape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         glow = ClickableSurfaceDefaults.glow(
             focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.18f), elevation = 12.dp),

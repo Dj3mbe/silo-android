@@ -47,6 +47,7 @@ import org.siloserver.silo.model.catalog.boxSetFilmCount
 import org.siloserver.silo.model.catalog.cardCaption
 import org.siloserver.silo.model.catalog.watchedFraction
 import org.siloserver.silo.overlays.OverlayDataExtractor
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.cardScaled
 import org.siloserver.silo.tv.ui.theme.rememberTvGridBringIntoViewSpec
@@ -370,7 +371,7 @@ fun TvCatalogGrid(
                         .padding(24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = FocusAccent)
                 }
             }
         }

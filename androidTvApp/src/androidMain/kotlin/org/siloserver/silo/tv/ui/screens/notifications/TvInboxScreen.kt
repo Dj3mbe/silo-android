@@ -56,6 +56,7 @@ import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.repository.NotificationsRepository
 import org.siloserver.silo.tv.ui.components.TvLoadingScreen
 import org.siloserver.silo.tv.ui.shell.TvTopMenuLayout
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloBlue
 import org.siloserver.silo.tv.ui.theme.ElevatedSurface
 import org.siloserver.silo.tv.ui.theme.Spacing
@@ -258,7 +259,7 @@ private fun MarkAllReadCard(
         shape = CardDefaults.shape(shape = cardShape),
         scale = CardDefaults.scale(focusedScale = 1.02f),
         border = CardDefaults.border(
-            focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = cardShape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = cardShape),
         ),
         glow = CardDefaults.glow(
             focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.25f), elevation = 16.dp),
@@ -296,7 +297,7 @@ private fun TvInboxRow(
         shape = CardDefaults.shape(shape = cardShape),
         scale = CardDefaults.scale(focusedScale = 1.02f),
         border = CardDefaults.border(
-            focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = cardShape),
+            focusedBorder = Border(BorderStroke(2.dp, FocusAccent), shape = cardShape),
         ),
         glow = CardDefaults.glow(
             focusedGlow = Glow(elevationColor = Color.White.copy(alpha = 0.25f), elevation = 16.dp),

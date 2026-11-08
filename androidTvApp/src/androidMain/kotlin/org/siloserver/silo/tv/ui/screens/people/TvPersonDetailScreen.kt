@@ -78,6 +78,7 @@ import org.siloserver.silo.tv.ui.components.TvErrorScreen
 import org.siloserver.silo.tv.ui.components.TvLoadingScreen
 import org.siloserver.silo.tv.ui.components.tvDialogSurface
 import org.siloserver.silo.tv.ui.theme.DarkSurfaceElevated
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.tvPresetGridColumns
 import java.time.LocalDate
@@ -731,7 +732,7 @@ private fun FilterChoiceChip(
                 shape = RoundedCornerShape(999.dp),
             ),
             focusedBorder = Border(
-                border = BorderStroke(0.dp, Color.Transparent),
+                border = BorderStroke(2.dp, FocusAccent),
                 shape = RoundedCornerShape(999.dp),
             ),
         ),

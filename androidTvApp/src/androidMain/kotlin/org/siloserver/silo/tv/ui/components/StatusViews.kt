@@ -18,6 +18,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 @Composable
 fun TvLoadingScreen(modifier: Modifier = Modifier) {
@@ -25,7 +26,7 @@ fun TvLoadingScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(64.dp))
+        CircularProgressIndicator(color = FocusAccent, modifier = Modifier.size(64.dp))
     }
 }
 

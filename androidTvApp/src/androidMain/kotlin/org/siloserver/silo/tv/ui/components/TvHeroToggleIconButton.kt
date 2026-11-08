@@ -30,6 +30,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Glow
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Surface
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloBlueGlow
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
@@ -86,7 +87,7 @@ internal fun TvHeroToggleIconButton(
                 shape = shape,
             ),
             focusedBorder = Border(
-                border = BorderStroke(3.dp, DarkBackground.copy(alpha = 0.78f)),
+                border = BorderStroke(2.5.dp, FocusAccent),
                 shape = shape,
             ),
         ),

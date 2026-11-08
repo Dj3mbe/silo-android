@@ -112,9 +112,13 @@ import org.siloserver.silo.tv.ui.focus.claimFocusOrReport
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 import org.siloserver.silo.tv.ui.focus.resolveTvReturnTarget
 import org.siloserver.silo.tv.ui.shell.TvTopMenuLayout
-import org.siloserver.silo.tv.ui.theme.DarkOnPrimary
+import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
+import org.siloserver.silo.tv.ui.theme.SelectedFill
+import org.siloserver.silo.tv.ui.theme.glassSheen
+import org.siloserver.silo.tv.ui.theme.SelectedStroke
 import org.siloserver.silo.tv.ui.theme.Spacing
 import org.siloserver.silo.tv.ui.theme.TvSmoothBringIntoViewSpec
 import org.siloserver.silo.tv.ui.theme.cardScaled
@@ -667,12 +671,15 @@ private fun FilterSegment(
     onFocused: () -> Unit,
 ) {
     val shape = RoundedCornerShape(100.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
     Surface(
         onClick = onClick,
+        interactionSource = interactionSource,
         shape = ClickableSurfaceDefaults.shape(shape = shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (selected) Color.White.copy(alpha = 0.88f) else Color.Transparent,
-            contentColor = if (selected) DarkOnPrimary else Color.White.copy(alpha = 0.70f),
+            containerColor = if (selected) SelectedFill else Color.Transparent,
+            contentColor = if (selected) SelectedContent else Color.White.copy(alpha = 0.70f),
             focusedContainerColor = FocusedContainer,
             focusedContentColor = FocusedContent,
             pressedContainerColor = FocusedContainer,
@@ -681,14 +688,16 @@ private fun FilterSegment(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
         border = ClickableSurfaceDefaults.border(
             border = Border.None,
-            focusedBorder = Border.None,
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         modifier = Modifier
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .onFocusChanged { if (it.isFocused) onFocused() },
     ) {
         Box(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+            modifier = Modifier
+                .glassSheen(shape, visible = selected && !isFocused)
+                .padding(horizontal = 12.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -799,6 +808,9 @@ private fun ChevronButton(
             pressedContentColor = FocusedContent,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
+        ),
         modifier = Modifier
             .onFocusChanged { if (it.isFocused) onFocused() }
             .size(28.dp),
@@ -834,6 +846,9 @@ private fun TodayButton(onClick: () -> Unit, onFocused: () -> Unit) {
             pressedContentColor = FocusedContent,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
+        ),
         modifier = Modifier.onFocusChanged { if (it.isFocused) onFocused() },
     ) {
         Box(
@@ -871,15 +886,14 @@ private fun DayCell(
     val shape = RoundedCornerShape(6.dp)
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val inverted = isSelected || isFocused
 
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
         shape = ClickableSurfaceDefaults.shape(shape = shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (isSelected) Color.White.copy(alpha = 0.88f) else Color.White.copy(alpha = 0.05f),
-            contentColor = if (isSelected) DarkOnPrimary else Color.White,
+            containerColor = if (isSelected) SelectedFill else Color.White.copy(alpha = 0.05f),
+            contentColor = if (isSelected) SelectedContent else Color.White,
             focusedContainerColor = FocusedContainer,
             focusedContentColor = FocusedContent,
             pressedContainerColor = FocusedContainer,
@@ -889,12 +903,16 @@ private fun DayCell(
         border = ClickableSurfaceDefaults.border(
             border = Border(
                 border = BorderStroke(
-                    width = if (isToday && !isSelected) 1.dp else 0.dp,
-                    color = if (isToday && !isSelected) Color.White.copy(alpha = 0.35f) else Color.Transparent,
+                    width = if (isSelected || isToday) 1.dp else 0.dp,
+                    color = when {
+                        isSelected -> SelectedStroke.copy(alpha = 0.55f)
+                        isToday -> Color.White.copy(alpha = 0.35f)
+                        else -> Color.Transparent
+                    },
                 ),
                 shape = shape,
             ),
-            focusedBorder = Border.None,
+            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = shape),
         ),
         modifier = Modifier
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
@@ -902,7 +920,9 @@ private fun DayCell(
             .size(width = 52.dp, height = 60.dp),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .glassSheen(shape, visible = isSelected && !isFocused),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
         ) {
@@ -912,10 +932,10 @@ private fun DayCell(
                     fontSize = 14.sp,
                     lineHeight = 18.sp,
                 ),
-                color = if (inverted) {
-                    (if (isFocused) FocusedContent else DarkOnPrimary).copy(alpha = 0.7f)
-                } else {
-                    Color.White.copy(alpha = 0.75f)
+                color = when {
+                    isFocused -> FocusedContent.copy(alpha = 0.7f)
+                    isSelected -> SelectedContent.copy(alpha = 0.75f)
+                    else -> Color.White.copy(alpha = 0.75f)
                 },
             )
             Text(
@@ -932,10 +952,10 @@ private fun DayCell(
                     .clip(CircleShape)
                     .background(
                         if (hasEvents) {
-                            if (inverted) {
-                                (if (isFocused) FocusedContent else DarkOnPrimary)
-                            } else {
-                                Color.White.copy(alpha = 0.8f)
+                            when {
+                                isFocused -> FocusedContent
+                                isSelected -> SelectedContent
+                                else -> Color.White.copy(alpha = 0.8f)
                             }
                         } else {
                             Color.Transparent
@@ -1633,6 +1653,9 @@ private fun CalendarMessage(
                             pressedContentColor = FocusedContent,
                         ),
                         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+                        border = ClickableSurfaceDefaults.border(
+                            focusedBorder = Border(border = BorderStroke(2.dp, FocusAccent), shape = RoundedCornerShape(100.dp)),
+                        ),
                         modifier = Modifier.onFocusChanged { if (it.isFocused) onActionFocused() },
                     ) {
                         Box(

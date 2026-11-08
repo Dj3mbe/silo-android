@@ -15,6 +15,7 @@ import org.siloserver.silo.common.ui.components.MachineTranslatedLabel
 import org.siloserver.silo.metadata.DescriptionTranslationPhase
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**
  * TV description-translation affordance (Apple tvOS parity): a focusable
@@ -66,7 +67,7 @@ internal fun TvTranslatingDescriptionLabel(modifier: Modifier = Modifier) {
         CircularProgressIndicator(
             modifier = Modifier.size(16.dp),
             strokeWidth = 2.dp,
-            color = Color.White,
+            color = FocusAccent,
         )
         Text(
             text = "Translating description…",

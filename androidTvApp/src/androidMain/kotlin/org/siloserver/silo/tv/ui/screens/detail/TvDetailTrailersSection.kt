@@ -53,6 +53,7 @@ import org.siloserver.silo.model.catalog.ItemVideo
 import org.siloserver.silo.model.catalog.TrailerRailEntry
 import org.siloserver.silo.model.catalog.trailerRailDurationLabel
 import org.siloserver.silo.tv.ui.theme.DarkSurfaceElevated
+import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.SiloSecondaryText
 import org.siloserver.silo.tv.ui.theme.TvRailScrollBehavior
@@ -157,7 +158,7 @@ private fun TvDetailTrailerCard(
                 .clip(cardShape)
                 .background(DarkSurfaceElevated)
                 .then(
-                    if (isFocused) Modifier.border(2.dp, Color.White.copy(alpha = 0.94f), cardShape)
+                    if (isFocused) Modifier.border(2.dp, FocusAccent, cardShape)
                     else Modifier,
                 ),
             contentAlignment = Alignment.Center,
