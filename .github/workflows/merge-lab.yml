@@ -44,8 +44,23 @@ jobs:
               git add -- "$f"
             done < "$RUNNER_TEMP/conflicts"
           fi
+      - name: Keep BK's own images and videos
+        run: |
+          # Lab's launcher icons, banner, logo pill, splash and similar carry a
+          # LAB label. They never go to custom; custom keeps its own copy.
+          git diff --cached --name-only HEAD -- '*/res/*.png' '*/res/*.mp4' > "$RUNNER_TEMP/media"
+          while IFS= read -r f; do
+            if git cat-file -e "HEAD:$f" 2>/dev/null; then
+              git checkout HEAD -- "$f"
+            else
+              git rm -qf -- "$f"
+            fi
+          done < "$RUNNER_TEMP/media"
       - name: Check the result before committing
         run: |
+          if ! git diff --cached --quiet HEAD -- '*/res/*.png' '*/res/*.mp4'; then
+            echo "::error::An image or video would change."; exit 1
+          fi
           if git grep --cached -nE '^(<<<<<<<|>>>>>>>) ' -- '*.kt' '*.kts' '*.xml' '*.yml'; then
             echo "::error::Conflict markers left in the merge."; exit 1
           fi
