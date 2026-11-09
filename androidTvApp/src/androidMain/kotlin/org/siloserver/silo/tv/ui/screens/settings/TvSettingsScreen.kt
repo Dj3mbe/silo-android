@@ -46,10 +46,10 @@ import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -431,23 +431,30 @@ internal fun tvSettingsCategoryForEligibility(
 private val LocalSettingsDetailFocusReporter = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 
 /**
- * Counts the times the category rail has taken focus. Each pane scrolls back to
- * its top on a change, so the first row, the target of the rail's Right, is
- * always on screen and built. A list scrolled away from it has no such row,
- * and Right had nowhere to go.
+ * The detail-pane row that last held focus, kept only while that row is
+ * composed, so Right from the rail returns to it rather than the first row.
  */
-internal val LocalSettingsPaneResetSignal = staticCompositionLocalOf { 0 }
+private class SettingsLastFocusedRow {
+    var requester: FocusRequester? = null
 
-@Composable
-internal fun rememberSettingsPaneListState(): LazyListState {
-    val listState = rememberLazyListState()
-    val resetSignal = LocalSettingsPaneResetSignal.current
-    LaunchedEffect(resetSignal) {
-        // The first run keeps a restored scroll position; the rail's own focus
-        // claim on entry bumps the signal and brings the pane to the top.
-        if (resetSignal > 0) listState.scrollToItem(0)
+    fun forget(row: FocusRequester) {
+        if (requester === row) requester = null
     }
-    return listState
+}
+
+private val LocalSettingsLastFocusedRow = staticCompositionLocalOf<SettingsLastFocusedRow?> { null }
+
+/** Records the row it is applied to as [SettingsLastFocusedRow] when it takes focus. */
+@Composable
+private fun rememberLastFocusedRowModifier(): Modifier {
+    val lastFocusedRow = LocalSettingsLastFocusedRow.current ?: return Modifier
+    val requester = remember { FocusRequester() }
+    DisposableEffect(lastFocusedRow) {
+        onDispose { lastFocusedRow.forget(requester) }
+    }
+    return Modifier
+        .focusRequester(requester)
+        .onFocusChanged { if (it.isFocused) lastFocusedRow.requester = requester }
 }
 
 // ---------------------------------------------------------------------------
@@ -522,7 +529,10 @@ private fun SettingsSplitLayout(
     onSubtitleDeviceOverrideEnabledChanged: (Boolean) -> Unit,
     onSubtitleMatchesDeviceChanged: (Boolean) -> Unit,
 ) {
-    var paneResetSignal by remember { mutableIntStateOf(0) }
+    // Right from the rail enters the pane as a whole, which returns to its last
+    // focused row. Aimed at the first row, Right was dropped once the pane had
+    // scrolled that row out of composition.
+    val detailPaneFocusRequester = remember { FocusRequester() }
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -544,11 +554,10 @@ private fun SettingsSplitLayout(
             visibleCategories = tvSettingsVisibleCategories(diagnosticsState.profileEligible),
             selectedCategory = selectedCategory,
             categoryFocusRequesters = categoryFocusRequesters,
-            detailFocusRequester = detailFocusRequester,
+            detailFocusRequester = detailPaneFocusRequester,
             onCategorySelected = onCategorySelected,
             onEnterCategory = onEnterCategory,
             onRailCategoryFocused = {
-                paneResetSignal++
                 onDetailFocusChanged(false)
                 onRailCategoryFocusChanged(true)
             },
@@ -557,13 +566,13 @@ private fun SettingsSplitLayout(
             modifier = Modifier.width(245.dp),
         )
         SettingsDetailPane(
-            paneResetSignal = paneResetSignal,
             state = state,
             diagnosticsState = diagnosticsState,
             diagnosticsViewModel = diagnosticsViewModel,
             homeSectionsViewModel = homeSectionsViewModel,
             selectedCategory = selectedCategory,
             detailFocusRequester = detailFocusRequester,
+            detailPaneFocusRequester = detailPaneFocusRequester,
             onDetailFocusChanged = onDetailFocusChanged,
             onShowAudiobooksTabChanged = onShowAudiobooksTabChanged,
             onProfileLaunchBehaviorChanged = onProfileLaunchBehaviorChanged,
@@ -847,13 +856,13 @@ private fun SettingsRailActionRow(
 
 @Composable
 private fun SettingsDetailPane(
-    paneResetSignal: Int,
     state: TvSettingsViewModel.UiState,
     diagnosticsState: org.siloserver.silo.common.diagnostics.DiagnosticsUiState,
     diagnosticsViewModel: TvDiagnosticsViewModel,
     homeSectionsViewModel: HomeViewModel,
     selectedCategory: TvSettingsCategory,
     detailFocusRequester: FocusRequester,
+    detailPaneFocusRequester: FocusRequester,
     onDetailFocusChanged: (Boolean) -> Unit,
     onShowAudiobooksTabChanged: (Boolean) -> Unit,
     onProfileLaunchBehaviorChanged: (ProfileLaunchBehavior) -> Unit,
@@ -906,11 +915,22 @@ private fun SettingsDetailPane(
     onSubtitleMatchesDeviceChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val lastFocusedRow = remember { SettingsLastFocusedRow() }
     CompositionLocalProvider(
         LocalSettingsDetailFocusReporter provides onDetailFocusChanged,
-        LocalSettingsPaneResetSignal provides paneResetSignal,
+        LocalSettingsLastFocusedRow provides lastFocusedRow,
     ) {
-      Column(modifier = modifier.fillMaxSize()) {
+      Column(
+          modifier = modifier
+              .fillMaxSize()
+              .focusRequester(detailPaneFocusRequester)
+              .focusProperties {
+                  // Back to the row last focused here, else the first row. If
+                  // neither is composed the request fails and focus enters at
+                  // the nearest row.
+                  onEnter = { (lastFocusedRow.requester ?: detailFocusRequester).requestFocus() }
+              },
+      ) {
         SettingsPaneHeader(selectedCategory)
 
         when (selectedCategory) {
@@ -1067,7 +1087,6 @@ private fun TvGeneralSettingsPane(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -1282,7 +1301,6 @@ private fun TvPlaybackSettingsPane(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -1915,7 +1933,6 @@ private fun TvSubtitleSettingsPane(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -2286,7 +2303,6 @@ private fun TvServerSettingsPane(
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
@@ -2844,6 +2860,7 @@ internal fun SettingsValueRow(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val reportDetailFocus = LocalSettingsDetailFocusReporter.current
+    val lastFocusedRowModifier = rememberLastFocusedRowModifier()
     Surface(
         onClick = onClick,
         enabled = enabled,
@@ -2860,6 +2877,7 @@ internal fun SettingsValueRow(
             .widthIn(max = RowMaxWidth)
             .fillMaxWidth()
             .height(RowHeight)
+            .then(lastFocusedRowModifier)
             .onFocusChanged { if (it.isFocused) reportDetailFocus(true) },
     ) {
         Row(
@@ -2908,6 +2926,7 @@ internal fun SettingsActionRow(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val reportDetailFocus = LocalSettingsDetailFocusReporter.current
+    val lastFocusedRowModifier = rememberLastFocusedRowModifier()
     Surface(
         onClick = onClick,
         enabled = enabled,
@@ -2924,6 +2943,7 @@ internal fun SettingsActionRow(
             .widthIn(max = RowMaxWidth)
             .fillMaxWidth()
             .height(RowHeight)
+            .then(lastFocusedRowModifier)
             .onFocusChanged { if (it.isFocused) reportDetailFocus(true) },
     ) {
         Row(
@@ -2968,6 +2988,7 @@ internal fun SettingsToggleRow(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val reportDetailFocus = LocalSettingsDetailFocusReporter.current
+    val lastFocusedRowModifier = rememberLastFocusedRowModifier()
     Surface(
         onClick = { onCheckedChange(!checked) },
         enabled = enabled,
@@ -2984,6 +3005,7 @@ internal fun SettingsToggleRow(
             .widthIn(max = RowMaxWidth)
             .fillMaxWidth()
             .height(RowHeight)
+            .then(lastFocusedRowModifier)
             .onFocusChanged { if (it.isFocused) reportDetailFocus(true) },
     ) {
         Row(

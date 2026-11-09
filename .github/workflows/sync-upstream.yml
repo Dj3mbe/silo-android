@@ -15,6 +15,10 @@ jobs:
         with:
           ref: custom
           fetch-depth: 0
+          # GitHub's built-in token may not push changes to workflow files, which
+          # upstream sometimes makes; SYNC_TOKEN is a token for this repository
+          # with the Workflows permission.
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
       - name: Merge upstream into custom
         run: |
           git config user.name "github-actions[bot]"
