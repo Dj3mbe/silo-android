@@ -1,7 +1,7 @@
 name: Build Lab APKs
 # Builds the "lab" branch as a separate app (BK Lab, com.bingekings.lab) so it installs
 # beside BK and Silo. Run it by hand from the Actions tab. It never touches BK's releases,
-# the "latest" release, the BK updater or the Discord post.
+# the "latest" release or the BK updater. It posts its own "BK Lab test build" message.
 on:
   workflow_dispatch:
     inputs:
@@ -90,3 +90,11 @@ jobs:
             --title "BK Lab $DAY" \
             --notes "BK Lab build of $BRANCH at ${{ steps.chk.outputs.sha }} (build ${{ steps.chk.outputs.build }}; code ${{ steps.chk.outputs.code }}). Test build, not for everyone." \
             --target "$BRANCH" --prerelease --latest=false
+      - name: Post to Discord
+        env:
+          HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            MSG="BK Lab test build ready from $BRANCH (build ${{ steps.chk.outputs.build }}): https://github.com/${{ github.repository }}/releases/tag/lab-latest"
+            curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
+          fi
