@@ -14,12 +14,12 @@ import android.os.Looper
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.TextView
 import org.koin.java.KoinJavaComponent.get
 import org.siloserver.silo.common.profiles.ProfileAwayTracker
@@ -47,6 +47,7 @@ import org.siloserver.silo.common.profiles.ProfileAwayTracker
 class YoutubeTrailerActivity : Activity() {
 
     private var webView: WebView? = null
+    private var cover: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
     private var ready = false
     private var handedOff = false
@@ -102,7 +103,21 @@ class YoutubeTrailerActivity : Activity() {
             }
         }
         view.addJavascriptInterface(Bridge(), "SiloTrailer")
-        setContentView(view)
+        // Black until the trailer plays, so YouTube's own error page never shows.
+        val coverView = TextView(this).apply {
+            text = "Loading trailer…"
+            setTextColor(Color.WHITE)
+            textSize = 28f
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.BLACK)
+        }
+        cover = coverView
+        setContentView(
+            FrameLayout(this).apply {
+                addView(view, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                addView(coverView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            },
+        )
         // YouTube's embed refuses players without an HTTPS origin and referrer
         // (error 152/153), so the page is given one.
         view.loadDataWithBaseURL(EMBED_ORIGIN, playerHtml(videoId), "text/html", "utf-8", null)
@@ -164,6 +179,7 @@ class YoutubeTrailerActivity : Activity() {
             destroy()
         }
         webView = null
+        cover = null
         super.onDestroy()
     }
 
@@ -178,17 +194,10 @@ class YoutubeTrailerActivity : Activity() {
         if (unavailableShown || isFinishing) return
         unavailableShown = true
         handler.removeCallbacks(loadTimeout)
-        webView?.visibility = View.GONE
-        addContentView(
-            TextView(this).apply {
-                text = "Trailer not available"
-                setTextColor(Color.WHITE)
-                textSize = 28f
-                gravity = Gravity.CENTER
-                setBackgroundColor(Color.BLACK)
-            },
-            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-        )
+        cover?.apply {
+            text = "Trailer not available"
+            visibility = View.VISIBLE
+        }
         handler.postDelayed({ finish() }, UNAVAILABLE_DISPLAY_MS)
     }
 
@@ -215,7 +224,10 @@ class YoutubeTrailerActivity : Activity() {
 
         @JavascriptInterface
         fun onPlaying() {
-            handler.post { startedPlaying = true }
+            handler.post {
+                startedPlaying = true
+                cover?.visibility = View.GONE
+            }
         }
     }
 

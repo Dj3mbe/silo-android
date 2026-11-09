@@ -42,8 +42,10 @@ internal class TvVoiceSearchController(
     val isAvailable: Boolean,
     private val launch: () -> Boolean,
     private val onUnavailable: () -> Unit,
-    /** True while the app itself is listening, so the mic button can show it. */
+    /** True once the app itself is listening, so the screen can show it. */
     val listening: Boolean = false,
+    /** What has been heard so far while [listening]. */
+    val transcript: String? = null,
     private val stop: () -> Unit = {},
 ) {
     fun start() {

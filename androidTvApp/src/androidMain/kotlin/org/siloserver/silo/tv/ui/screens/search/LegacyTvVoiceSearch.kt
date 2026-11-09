@@ -37,6 +37,8 @@ internal fun rememberLegacyTvVoiceSearch(
     val currentOnUnavailable by rememberUpdatedState(onUnavailable)
     val currentOnStatus by rememberUpdatedState(onStatus)
     var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+    var ready by remember { mutableStateOf(false) }
+    var transcript by remember { mutableStateOf<String?>(null) }
     val available = remember(context) { SpeechRecognizer.isRecognitionAvailable(context) }
     val handler = remember { Handler(Looper.getMainLooper()) }
     var startupTimeout by remember { mutableStateOf<Runnable?>(null) }
@@ -48,6 +50,8 @@ internal fun rememberLegacyTvVoiceSearch(
 
     fun releaseRecognizer() {
         cancelStartupTimeout()
+        ready = false
+        transcript = null
         val speech = recognizer
         recognizer = null
         try {
@@ -67,11 +71,11 @@ internal fun rememberLegacyTvVoiceSearch(
         stopRecognition()
         val speech = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = speech
-        currentOnStatus("Listening…")
         speech.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 if (recognizer !== speech) return
                 cancelStartupTimeout()
+                ready = true
                 Log.i("TvVoiceSearch", "Recognition ready")
             }
             override fun onBeginningOfSpeech() {
@@ -86,7 +90,7 @@ internal fun rememberLegacyTvVoiceSearch(
                 cancelStartupTimeout()
                 partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()?.takeIf { it.isNotBlank() }
-                    ?.let(currentOnStatus)
+                    ?.let { transcript = it }
             }
             override fun onResults(results: Bundle?) {
                 if (recognizer !== speech) return
@@ -165,7 +169,8 @@ internal fun rememberLegacyTvVoiceSearch(
             }
         },
         onUnavailable = { currentOnUnavailable() },
-        listening = recognizer != null,
+        listening = ready,
+        transcript = transcript,
         stop = ::stopRecognition,
     )
 }

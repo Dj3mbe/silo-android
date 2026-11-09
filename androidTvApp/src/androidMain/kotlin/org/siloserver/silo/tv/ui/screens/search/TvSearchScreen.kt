@@ -715,7 +715,10 @@ fun TvSearchScreen(
                     onChipsFocusChanged = { focused ->
                         setFocusedRegion(TvSearchFocusRegion.Chips, focused)
                     },
-                    onQueryChanged = viewModel::onQueryChanged,
+                    onQueryChanged = { text ->
+                        voiceUnavailableMessage = null
+                        viewModel.onQueryChanged(text)
+                    },
                     onClearQuery = {
                         // Clearing is the start of a new query, so hand the
                         // field back with the keyboard up: the mic key is one
@@ -1071,7 +1074,8 @@ private fun SearchStage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
-                value = query,
+                // While the mic listens, the field shows what it hears.
+                value = if (voiceSearch.listening) voiceSearch.transcript.orEmpty() else query,
                 onValueChange = { onQueryChanged(it.take(TV_SEARCH_QUERY_MAX_LENGTH)) },
                 // Read-only until Select. This is what actually keeps the keyboard
                 // down — not withholding a show() call, which was the earlier
@@ -1085,7 +1089,7 @@ private fun SearchStage(
                 singleLine = true,
                 placeholder = {
                     Text(
-                        text = searchFieldPrompt(mediaTypes),
+                        text = if (voiceSearch.listening) "Listening…" else searchFieldPrompt(mediaTypes),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.56f),
                     )
