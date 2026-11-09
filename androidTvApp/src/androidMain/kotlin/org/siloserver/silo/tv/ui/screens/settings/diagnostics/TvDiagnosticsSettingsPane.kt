@@ -59,7 +59,6 @@ import org.siloserver.silo.tv.ui.screens.settings.SettingsToggleRow
 import org.siloserver.silo.tv.ui.screens.settings.SettingsValueRow
 import org.siloserver.silo.tv.ui.screens.settings.TvSettingsConfirmDialog
 import org.siloserver.silo.tv.ui.screens.settings.TvSettingsPickerSheet
-import org.siloserver.silo.tv.ui.screens.settings.rememberSettingsPaneListState
 import org.siloserver.silo.tv.ui.theme.Spacing
 
 /**
@@ -161,7 +160,6 @@ internal fun TvDiagnosticsSettingsPane(
         modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { viewportPx = it.height },
-        state = rememberSettingsPaneListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = Spacing.xxxl),
     ) {
