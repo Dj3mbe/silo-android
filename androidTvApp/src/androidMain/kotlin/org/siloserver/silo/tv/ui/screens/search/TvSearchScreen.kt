@@ -70,6 +70,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawBehind
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
@@ -295,6 +297,7 @@ fun TvSearchScreen(
         onUnavailable = {
             voiceUnavailableMessage = "Voice search isn't available on this device."
         },
+        onStatus = { voiceUnavailableMessage = it },
     )
 
     LaunchedEffect(requestsEnabled, state.query, requestMediaType) {
@@ -1185,6 +1188,8 @@ private fun SearchStage(
             // Hidden outright when nothing can service it: a mic that does
             // nothing when pressed is worse than no mic.
             if (showVoice) {
+                // A gold ring spreads out from the mic while the app listens.
+                val pulse = if (voiceSearch.listening) rememberListeningPulse() else null
                 TvHeroToggleIconButton(
                     selected = false,
                     selectedContainerColor = Color.Transparent,
@@ -1193,6 +1198,14 @@ private fun SearchStage(
                     contentDescription = "Search by voice",
                     onClick = voiceSearch::start,
                     modifier = Modifier
+                        .drawBehind {
+                            val progress = pulse?.value ?: return@drawBehind
+                            drawCircle(
+                                color = FocusAccent.copy(alpha = 0.85f * (1f - progress)),
+                                radius = size.minDimension / 2f * (1f + 0.45f * progress),
+                                style = Stroke(width = 4.dp.toPx()),
+                            )
+                        }
                         .focusRequester(voiceButtonFocusRequester)
                         .focusProperties {
                             left = searchFieldFocusRequester

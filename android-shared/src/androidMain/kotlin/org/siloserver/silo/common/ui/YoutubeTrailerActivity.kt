@@ -11,13 +11,16 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.TextView
 import org.koin.java.KoinJavaComponent.get
 import org.siloserver.silo.common.profiles.ProfileAwayTracker
 
@@ -31,9 +34,11 @@ import org.siloserver.silo.common.profiles.ProfileAwayTracker
  * Remote: OK / Play-Pause toggles, Left / Right seek 10 seconds, Back closes.
  * The activity closes itself when the trailer ends. If the owner blocks
  * embedding, the video is unavailable, or the player doesn't start within
- * [LOAD_TIMEOUT_MS] of the page loading, it hands the trailer to the YouTube
- * app instead. An error after the trailer has started just closes the
- * player: handing off mid-trailer would bring back YouTube's profile picker.
+ * [LOAD_TIMEOUT_MS] of the page loading, it says so and closes: the YouTube app
+ * cannot play a video YouTube reports as unavailable, and opening it only
+ * strands the viewer on its profile picker. The one hand-off left is a device
+ * with no WebView at all. An error after the trailer has started just closes
+ * the player.
  *
  * The player is part of Silo, so opening it is not leaving Silo: it tells
  * [ProfileAwayTracker], and a viewer on "Every Time" is not asked who is
@@ -45,10 +50,11 @@ class YoutubeTrailerActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var ready = false
     private var handedOff = false
+    private var unavailableShown = false
     private var startedPlaying = false
     private lateinit var videoId: String
 
-    private val loadTimeout = Runnable { if (!ready) handOffToYoutubeApp() }
+    private val loadTimeout = Runnable { if (!ready) showUnavailable() }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -168,6 +174,24 @@ class YoutubeTrailerActivity : Activity() {
         finish()
     }
 
+    private fun showUnavailable() {
+        if (unavailableShown || isFinishing) return
+        unavailableShown = true
+        handler.removeCallbacks(loadTimeout)
+        webView?.visibility = View.GONE
+        addContentView(
+            TextView(this).apply {
+                text = "Trailer not available"
+                setTextColor(Color.WHITE)
+                textSize = 28f
+                gravity = Gravity.CENTER
+                setBackgroundColor(Color.BLACK)
+            },
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+        )
+        handler.postDelayed({ finish() }, UNAVAILABLE_DISPLAY_MS)
+    }
+
     /** Called by the player page on a WebView thread; hops to the main thread. */
     private inner class Bridge {
         @JavascriptInterface
@@ -186,7 +210,7 @@ class YoutubeTrailerActivity : Activity() {
         /** Embedding blocked (101/150), unavailable (100), or a player error. */
         @JavascriptInterface
         fun onError(@Suppress("UNUSED_PARAMETER") code: Int) {
-            handler.post { if (startedPlaying) finish() else handOffToYoutubeApp() }
+            handler.post { if (startedPlaying) finish() else showUnavailable() }
         }
 
         @JavascriptInterface
@@ -199,6 +223,7 @@ class YoutubeTrailerActivity : Activity() {
         private const val EXTRA_VIDEO_ID = "org.siloserver.silo.extra.YOUTUBE_VIDEO_ID"
         private const val EMBED_ORIGIN = "https://www.siloserver.org"
         private const val LOAD_TIMEOUT_MS = 20_000L
+        private const val UNAVAILABLE_DISPLAY_MS = 2500L
         private const val PAGE_LOAD_TIMEOUT_MS = 45_000L
         private val VIDEO_ID = Regex("^[A-Za-z0-9_-]{6,20}$")
 

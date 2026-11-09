@@ -42,8 +42,17 @@ internal class TvVoiceSearchController(
     val isAvailable: Boolean,
     private val launch: () -> Boolean,
     private val onUnavailable: () -> Unit,
+    /** True while the app itself is listening, so the mic button can show it. */
+    val listening: Boolean = false,
+    private val stop: () -> Unit = {},
 ) {
     fun start() {
+        // A second press while listening cancels, since there is no dialog
+        // to press Cancel on.
+        if (listening) {
+            stop()
+            return
+        }
         // Availability was resolved earlier and can be wrong by now — the
         // recogniser may have been disabled or uninstalled since. Say so
         // instead of doing nothing: a visible mic that silently ignores a
@@ -58,6 +67,7 @@ internal fun rememberTvVoiceSearch(
     prompt: String,
     onResult: (String) -> Unit,
     onUnavailable: () -> Unit,
+    onStatus: (String?) -> Unit = {},
 ): TvVoiceSearchController {
     val context = LocalContext.current
     val currentOnResult by rememberUpdatedState(onResult)
@@ -73,7 +83,7 @@ internal fun rememberTvVoiceSearch(
             SpeechRecognizer.isRecognitionAvailable(context)
     }
     if (useLegacyRecognizer) {
-        return rememberLegacyTvVoiceSearch(prompt, onResult, onUnavailable)
+        return rememberLegacyTvVoiceSearch(onResult, onUnavailable, onStatus)
     }
     val isAvailable = remember(context) { isTvSpeechRecognitionAvailable(context) }
 

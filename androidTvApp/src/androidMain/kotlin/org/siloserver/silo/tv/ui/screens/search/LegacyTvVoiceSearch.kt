@@ -1,7 +1,6 @@
 package org.siloserver.silo.tv.ui.screens.search
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -28,16 +27,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 /** Android 11 rejects the Google TV activity's in-process recognition request. */
 @Composable
 internal fun rememberLegacyTvVoiceSearch(
-    prompt: String,
     onResult: (String) -> Unit,
     onUnavailable: () -> Unit,
+    onStatus: (String?) -> Unit,
 ): TvVoiceSearchController {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnResult by rememberUpdatedState(onResult)
     val currentOnUnavailable by rememberUpdatedState(onUnavailable)
+    val currentOnStatus by rememberUpdatedState(onStatus)
     var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
-    var dialog by remember { mutableStateOf<AlertDialog?>(null) }
     val available = remember(context) { SpeechRecognizer.isRecognitionAvailable(context) }
     val handler = remember { Handler(Looper.getMainLooper()) }
     var startupTimeout by remember { mutableStateOf<Runnable?>(null) }
@@ -61,25 +60,14 @@ internal fun rememberLegacyTvVoiceSearch(
 
     fun stopRecognition() {
         releaseRecognizer()
-        dialog?.dismiss()
-        dialog = null
+        currentOnStatus(null)
     }
 
     val startRecognition = {
         stopRecognition()
         val speech = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = speech
-        val listeningDialog = AlertDialog.Builder(context)
-            .setTitle("Voice search")
-            .setMessage(prompt)
-            .setNegativeButton(android.R.string.cancel) { _, _ ->
-                stopRecognition()
-            }
-            .create()
-        dialog = listeningDialog
-        listeningDialog.setOnCancelListener {
-            stopRecognition()
-        }
+        currentOnStatus("Listening…")
         speech.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 if (recognizer !== speech) return
@@ -98,7 +86,7 @@ internal fun rememberLegacyTvVoiceSearch(
                 cancelStartupTimeout()
                 partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()?.takeIf { it.isNotBlank() }
-                    ?.let(listeningDialog::setMessage)
+                    ?.let(currentOnStatus)
             }
             override fun onResults(results: Bundle?) {
                 if (recognizer !== speech) return
@@ -111,9 +99,9 @@ internal fun rememberLegacyTvVoiceSearch(
                 if (recognizer !== speech) return
                 Log.w("TvVoiceSearch", "Recognition failed: $error")
                 releaseRecognizer()
-                listeningDialog.setMessage(when (error) {
+                currentOnStatus(when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
-                        "Didn't hear a title. Close and try again."
+                        "Didn't hear a title. Try again."
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
                         "Couldn't connect to voice search. Check your connection and try again."
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
@@ -122,11 +110,10 @@ internal fun rememberLegacyTvVoiceSearch(
                         } else {
                             "The voice service couldn't access the microphone. Check microphone access in device settings and try again."
                         }
-                    else -> "Voice search couldn't start. Close and try again."
+                    else -> "Voice search couldn't start. Try again."
                 })
             }
         })
-        listeningDialog.show()
         // Android 11 can drop binding errors before installing the listener.
         val timeout = Runnable {
             if (recognizer === speech) {
@@ -154,12 +141,7 @@ internal fun rememberLegacyTvVoiceSearch(
         if (granted) {
             if (!startRecognition()) currentOnUnavailable()
         } else {
-            dialog = AlertDialog.Builder(context)
-                .setTitle("Voice search")
-                .setMessage("Allow microphone access for Silo in Settings to use voice search.")
-                .setPositiveButton(android.R.string.ok) { _, _ -> dialog = null }
-                .setOnCancelListener { dialog = null }
-                .show()
+            currentOnStatus("Allow microphone access for Silo in Settings to use voice search.")
         }
     }
     DisposableEffect(lifecycleOwner) {
@@ -172,12 +154,18 @@ internal fun rememberLegacyTvVoiceSearch(
             stopRecognition()
         }
     }
-    return TvVoiceSearchController(available, {
-        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            startRecognition()
-        } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            true
-        }
-    }, { currentOnUnavailable() })
+    return TvVoiceSearchController(
+        isAvailable = available,
+        launch = {
+            if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                startRecognition()
+            } else {
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                true
+            }
+        },
+        onUnavailable = { currentOnUnavailable() },
+        listening = recognizer != null,
+        stop = ::stopRecognition,
+    )
 }
