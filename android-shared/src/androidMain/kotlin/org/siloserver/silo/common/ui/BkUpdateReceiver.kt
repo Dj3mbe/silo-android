@@ -7,7 +7,7 @@ import android.content.pm.PackageInstaller
 import android.widget.Toast
 
 /**
- * BK fork: receives the PackageInstaller result for [BkUpdater]. Android asks
+ * BK: receives the PackageInstaller result for [BkUpdater]. Android asks
  * for the user's confirmation through the intent it attaches; this forwards it.
  */
 class BkUpdateReceiver : BroadcastReceiver() {

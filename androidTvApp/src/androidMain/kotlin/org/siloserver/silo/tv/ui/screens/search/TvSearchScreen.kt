@@ -70,6 +70,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawBehind
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
@@ -282,40 +284,21 @@ fun TvSearchScreen(
     // A spoken query is a submitted query, including the focus handoff:
     // nobody dictates a title in order to be left sitting on the search field.
     var voiceUnavailableMessage by remember { mutableStateOf<String?>(null) }
-    val handleSpoken: (String) -> Unit = { spoken ->
-        // The same cap typing obeys; recognised text never went through
-        // the field's own limit.
-        val query = spoken.take(TV_SEARCH_QUERY_MAX_LENGTH)
-        voiceUnavailableMessage = null
-        viewModel.onQueryChanged(query)
-        submitQuery(query)
-    }
-    val systemVoiceSearch = rememberTvVoiceSearch(
+    val voiceSearch = rememberTvVoiceSearch(
         prompt = "Speak a title",
-        onResult = handleSpoken,
+        onResult = { spoken ->
+            // The same cap typing obeys; recognised text never went through
+            // the field's own limit.
+            val query = spoken.take(TV_SEARCH_QUERY_MAX_LENGTH)
+            voiceUnavailableMessage = null
+            viewModel.onQueryChanged(query)
+            submitQuery(query)
+        },
         onUnavailable = {
             voiceUnavailableMessage = "Voice search isn't available on this device."
         },
-    )
-    // BK: the system "Speak a title" screen never hears audio on some devices
-    // (Nvidia Shield), so listen inside the app whenever the device can. Devices
-    // without a speech service fall back to the system screen below.
-    val inAppVoice = rememberTvInAppVoice(
-        onResult = handleSpoken,
         onStatus = { voiceUnavailableMessage = it },
     )
-    val useInAppVoice = inAppVoice.isAvailable
-    val voiceSearch = remember(systemVoiceSearch, inAppVoice, useInAppVoice) {
-        if (useInAppVoice) {
-            TvVoiceSearchController(
-                isAvailable = true,
-                launch = { inAppVoice.start(); true },
-                onUnavailable = {},
-            )
-        } else {
-            systemVoiceSearch
-        }
-    }
 
     LaunchedEffect(requestsEnabled, state.query, requestMediaType) {
         val query = state.query.trim()
@@ -732,7 +715,10 @@ fun TvSearchScreen(
                     onChipsFocusChanged = { focused ->
                         setFocusedRegion(TvSearchFocusRegion.Chips, focused)
                     },
-                    onQueryChanged = viewModel::onQueryChanged,
+                    onQueryChanged = { text ->
+                        voiceUnavailableMessage = null
+                        viewModel.onQueryChanged(text)
+                    },
                     onClearQuery = {
                         // Clearing is the start of a new query, so hand the
                         // field back with the keyboard up: the mic key is one
@@ -1088,7 +1074,8 @@ private fun SearchStage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
-                value = query,
+                // While the mic listens, the field shows what it hears.
+                value = if (voiceSearch.listening) voiceSearch.transcript.orEmpty() else query,
                 onValueChange = { onQueryChanged(it.take(TV_SEARCH_QUERY_MAX_LENGTH)) },
                 // Read-only until Select. This is what actually keeps the keyboard
                 // down — not withholding a show() call, which was the earlier
@@ -1102,7 +1089,7 @@ private fun SearchStage(
                 singleLine = true,
                 placeholder = {
                     Text(
-                        text = searchFieldPrompt(mediaTypes),
+                        text = if (voiceSearch.listening) "Listening…" else searchFieldPrompt(mediaTypes),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.56f),
                     )
@@ -1205,6 +1192,8 @@ private fun SearchStage(
             // Hidden outright when nothing can service it: a mic that does
             // nothing when pressed is worse than no mic.
             if (showVoice) {
+                // A gold ring spreads out from the mic while the app listens.
+                val pulse = if (voiceSearch.listening) rememberListeningPulse() else null
                 TvHeroToggleIconButton(
                     selected = false,
                     selectedContainerColor = Color.Transparent,
@@ -1213,6 +1202,14 @@ private fun SearchStage(
                     contentDescription = "Search by voice",
                     onClick = voiceSearch::start,
                     modifier = Modifier
+                        .drawBehind {
+                            val progress = pulse?.value ?: return@drawBehind
+                            drawCircle(
+                                color = FocusAccent.copy(alpha = 0.85f * (1f - progress)),
+                                radius = size.minDimension / 2f * (1f + 0.45f * progress),
+                                style = Stroke(width = 4.dp.toPx()),
+                            )
+                        }
                         .focusRequester(voiceButtonFocusRequester)
                         .focusProperties {
                             left = searchFieldFocusRequester
@@ -1380,9 +1377,6 @@ private fun SearchFeedbackMessage(
 
 private fun searchFieldPrompt(mediaTypes: List<TvSearchMediaType>): String =
     "Search ${availableMediaNames(mediaTypes)}"
-
-private fun availableMediaDescription(mediaTypes: List<TvSearchMediaType>): String =
-    "Find ${availableMediaNames(mediaTypes)} in one place."
 
 private fun availableMediaNames(mediaTypes: List<TvSearchMediaType>): String {
     val names = mediaTypes

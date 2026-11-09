@@ -445,7 +445,7 @@ fun TvCascadeSelector(
                         Text(
                             text = "↓ more",
                             color = SiloOnSurface.copy(alpha = 0.70f),
-                            fontSize = 12.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)

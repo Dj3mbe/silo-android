@@ -1,5 +1,6 @@
 package org.siloserver.silo.common.ui
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -38,7 +39,7 @@ fun openYoutubeTrailerExternally(context: Context, videoId: String) {
         add(Intent(Intent.ACTION_VIEW, watchPage))
     }
     val opened = intents.any { intent ->
-        if (context !is android.app.Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { context.startActivity(intent) }.isSuccess
     }
     if (!opened) {

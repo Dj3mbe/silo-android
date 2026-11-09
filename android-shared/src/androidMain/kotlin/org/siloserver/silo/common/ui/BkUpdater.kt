@@ -21,7 +21,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * BK fork: checks this fork's GitHub releases on launch and, when a newer
+ * BK: checks this fork's GitHub releases on launch and, when a newer
  * build exists, offers a one-press update. The APK is streamed straight into
  * Android's PackageInstaller (no storage permission or FileProvider needed);
  * Android then shows its normal install confirmation.

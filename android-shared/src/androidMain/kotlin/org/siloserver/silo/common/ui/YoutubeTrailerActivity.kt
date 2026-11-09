@@ -11,6 +11,10 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -18,6 +22,8 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
+import android.widget.TextView
 import org.koin.java.KoinJavaComponent.get
 import org.siloserver.silo.common.profiles.ProfileAwayTracker
 
@@ -31,9 +37,11 @@ import org.siloserver.silo.common.profiles.ProfileAwayTracker
  * Remote: OK / Play-Pause toggles, Left / Right seek 10 seconds, Back closes.
  * The activity closes itself when the trailer ends. If the owner blocks
  * embedding, the video is unavailable, or the player doesn't start within
- * [LOAD_TIMEOUT_MS] of the page loading, it hands the trailer to the YouTube
- * app instead. An error after the trailer has started just closes the
- * player: handing off mid-trailer would bring back YouTube's profile picker.
+ * [LOAD_TIMEOUT_MS] of the page loading, it says so and closes: the YouTube app
+ * cannot play a video YouTube reports as unavailable, and opening it only
+ * strands the viewer on its profile picker. The one hand-off left is a device
+ * with no WebView at all. An error after the trailer has started just closes
+ * the player.
  *
  * The player is part of Silo, so opening it is not leaving Silo: it tells
  * [ProfileAwayTracker], and a viewer on "Every Time" is not asked who is
@@ -42,13 +50,36 @@ import org.siloserver.silo.common.profiles.ProfileAwayTracker
 class YoutubeTrailerActivity : Activity() {
 
     private var webView: WebView? = null
+    private var cover: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
     private var ready = false
     private var handedOff = false
+    private var unavailableShown = false
     private var startedPlaying = false
     private lateinit var videoId: String
 
-    private val loadTimeout = Runnable { if (!ready) handOffToYoutubeApp() }
+    private val loadTimeout = Runnable { if (!ready) showUnavailable() }
+
+    // Cycles the loading dots. Hidden dots are made transparent rather than
+    // removed, so the words stay put while the dots change.
+    private val loadingDots = object : Runnable {
+        private var shown = 0
+        override fun run() {
+            val view = cover ?: return
+            shown = (shown + 1) % 4
+            view.text = SpannableString(LOADING_TEXT).apply {
+                if (shown < 3) {
+                    setSpan(
+                        ForegroundColorSpan(Color.TRANSPARENT),
+                        LOADING_TEXT.length - 3 + shown,
+                        LOADING_TEXT.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                    )
+                }
+            }
+            handler.postDelayed(this, DOT_INTERVAL_MS)
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,7 +127,21 @@ class YoutubeTrailerActivity : Activity() {
             }
         }
         view.addJavascriptInterface(Bridge(), "SiloTrailer")
-        setContentView(view)
+        // Black until the trailer plays, so YouTube's own error page never shows.
+        val coverView = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            textSize = 28f
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.BLACK)
+        }
+        cover = coverView
+        handler.post(loadingDots)
+        setContentView(
+            FrameLayout(this).apply {
+                addView(view, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                addView(coverView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            },
+        )
         // YouTube's embed refuses players without an HTTPS origin and referrer
         // (error 152/153), so the page is given one.
         view.loadDataWithBaseURL(EMBED_ORIGIN, playerHtml(videoId), "text/html", "utf-8", null)
@@ -158,6 +203,7 @@ class YoutubeTrailerActivity : Activity() {
             destroy()
         }
         webView = null
+        cover = null
         super.onDestroy()
     }
 
@@ -166,6 +212,18 @@ class YoutubeTrailerActivity : Activity() {
         handedOff = true
         openYoutubeTrailerExternally(this, videoId)
         finish()
+    }
+
+    private fun showUnavailable() {
+        if (unavailableShown || isFinishing) return
+        unavailableShown = true
+        handler.removeCallbacks(loadTimeout)
+        handler.removeCallbacks(loadingDots)
+        cover?.apply {
+            text = "Trailer not available"
+            visibility = View.VISIBLE
+        }
+        handler.postDelayed({ finish() }, UNAVAILABLE_DISPLAY_MS)
     }
 
     /** Called by the player page on a WebView thread; hops to the main thread. */
@@ -185,13 +243,17 @@ class YoutubeTrailerActivity : Activity() {
 
         /** Embedding blocked (101/150), unavailable (100), or a player error. */
         @JavascriptInterface
-        fun onError(@Suppress("UNUSED_PARAMETER") code: Int) {
-            handler.post { if (startedPlaying) finish() else handOffToYoutubeApp() }
+        fun onError() {
+            handler.post { if (startedPlaying) finish() else showUnavailable() }
         }
 
         @JavascriptInterface
         fun onPlaying() {
-            handler.post { startedPlaying = true }
+            handler.post {
+                startedPlaying = true
+                handler.removeCallbacks(loadingDots)
+                cover?.visibility = View.GONE
+            }
         }
     }
 
@@ -200,6 +262,9 @@ class YoutubeTrailerActivity : Activity() {
         private const val EMBED_ORIGIN = "https://www.siloserver.org"
         private const val LOAD_TIMEOUT_MS = 20_000L
         private const val PAGE_LOAD_TIMEOUT_MS = 45_000L
+        private const val UNAVAILABLE_DISPLAY_MS = 2_500L
+        private const val DOT_INTERVAL_MS = 450L
+        private const val LOADING_TEXT = "Loading trailer..."
         private val VIDEO_ID = Regex("^[A-Za-z0-9_-]{6,20}$")
 
         /** False when [videoId] isn't a YouTube video ID this player accepts. */
@@ -255,7 +320,7 @@ class YoutubeTrailerActivity : Activity() {
                       if (e.data === YT.PlayerState.PLAYING) SiloTrailer.onPlaying();
                       if (e.data === YT.PlayerState.ENDED) SiloTrailer.onEnded();
                     },
-                    onError: function (e) { SiloTrailer.onError(e.data); }
+                    onError: function () { SiloTrailer.onError(); }
                   }
                 });
               }

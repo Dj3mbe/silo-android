@@ -188,7 +188,7 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
-        <!-- Fork: in-app update check result (see BkUpdater). -->
+        <!-- BK: in-app update check result (see BkUpdater). -->
         <receiver
             android:name="org.siloserver.silo.common.ui.BkUpdateReceiver"
             android:exported="false" />

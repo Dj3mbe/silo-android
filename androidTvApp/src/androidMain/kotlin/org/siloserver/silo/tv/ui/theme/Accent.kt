@@ -75,7 +75,6 @@ enum class AccentPreset(val id: String, val label: String, val color: Color) {
  * uses the saved colour.
  */
 object TvAccent {
-    /** The preset used until the viewer picks another. */
     val DefaultPreset = AccentPreset.Gold
 
     /** [selectedId] when the viewer chose their own colour. */
