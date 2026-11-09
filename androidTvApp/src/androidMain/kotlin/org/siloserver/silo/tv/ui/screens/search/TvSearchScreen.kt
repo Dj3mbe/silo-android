@@ -282,40 +282,20 @@ fun TvSearchScreen(
     // A spoken query is a submitted query, including the focus handoff:
     // nobody dictates a title in order to be left sitting on the search field.
     var voiceUnavailableMessage by remember { mutableStateOf<String?>(null) }
-    val handleSpoken: (String) -> Unit = { spoken ->
-        // The same cap typing obeys; recognised text never went through
-        // the field's own limit.
-        val query = spoken.take(TV_SEARCH_QUERY_MAX_LENGTH)
-        voiceUnavailableMessage = null
-        viewModel.onQueryChanged(query)
-        submitQuery(query)
-    }
-    val systemVoiceSearch = rememberTvVoiceSearch(
+    val voiceSearch = rememberTvVoiceSearch(
         prompt = "Speak a title",
-        onResult = handleSpoken,
+        onResult = { spoken ->
+            // The same cap typing obeys; recognised text never went through
+            // the field's own limit.
+            val query = spoken.take(TV_SEARCH_QUERY_MAX_LENGTH)
+            voiceUnavailableMessage = null
+            viewModel.onQueryChanged(query)
+            submitQuery(query)
+        },
         onUnavailable = {
             voiceUnavailableMessage = "Voice search isn't available on this device."
         },
     )
-    // BK: the system "Speak a title" screen never hears audio on some devices
-    // (Nvidia Shield), so listen inside the app whenever the device can. Devices
-    // without a speech service fall back to the system screen below.
-    val inAppVoice = rememberTvInAppVoice(
-        onResult = handleSpoken,
-        onStatus = { voiceUnavailableMessage = it },
-    )
-    val useInAppVoice = inAppVoice.isAvailable
-    val voiceSearch = remember(systemVoiceSearch, inAppVoice, useInAppVoice) {
-        if (useInAppVoice) {
-            TvVoiceSearchController(
-                isAvailable = true,
-                launch = { inAppVoice.start(); true },
-                onUnavailable = {},
-            )
-        } else {
-            systemVoiceSearch
-        }
-    }
 
     LaunchedEffect(requestsEnabled, state.query, requestMediaType) {
         val query = state.query.trim()
