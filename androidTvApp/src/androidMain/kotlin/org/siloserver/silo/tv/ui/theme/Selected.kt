@@ -55,7 +55,6 @@ object TvSelected {
     var glass by mutableStateOf(true)
         private set
 
-    /** The chosen colour, exactly as picked. */
     private val color: Color
         get() = when (selectedId) {
             MatchId -> TvAccent.color

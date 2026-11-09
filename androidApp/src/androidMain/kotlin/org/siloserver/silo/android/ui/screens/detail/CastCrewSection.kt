@@ -145,7 +145,7 @@ private fun CastTile(
     }
 }
 
-/** BK fork: web-style vertical divider with a rotated group label ("WRITERS", "CAST"). */
+/** BK: web-style vertical divider with a rotated group label ("WRITERS", "CAST"). */
 @Composable
 private fun CastGroupDivider(label: String) {
     Row(verticalAlignment = Alignment.Top) {

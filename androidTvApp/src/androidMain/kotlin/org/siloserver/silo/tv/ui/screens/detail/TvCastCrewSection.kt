@@ -300,19 +300,19 @@ internal fun TvCastCard(
     }
 }
 
-/** BK fork: web-style vertical divider with a rotated group label ("WRITERS", "CAST"). */
+/** BK: web-style vertical divider with a rotated group label ("WRITERS", "CAST"). */
 @Composable
 internal fun TvCastGroupDivider(label: String, photoSize: Dp) {
     Row(verticalAlignment = Alignment.Top) {
         Box(
             modifier = Modifier
-                .width(16.dp)
+                .width(20.dp)
                 .height(photoSize),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = label,
-                fontSize = 11.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
                 color = Color.White.copy(alpha = 0.55f),

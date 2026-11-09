@@ -243,7 +243,7 @@ class YoutubeTrailerActivity : Activity() {
 
         /** Embedding blocked (101/150), unavailable (100), or a player error. */
         @JavascriptInterface
-        fun onError(@Suppress("UNUSED_PARAMETER") code: Int) {
+        fun onError() {
             handler.post { if (startedPlaying) finish() else showUnavailable() }
         }
 
@@ -261,10 +261,10 @@ class YoutubeTrailerActivity : Activity() {
         private const val EXTRA_VIDEO_ID = "org.siloserver.silo.extra.YOUTUBE_VIDEO_ID"
         private const val EMBED_ORIGIN = "https://www.siloserver.org"
         private const val LOAD_TIMEOUT_MS = 20_000L
-        private const val UNAVAILABLE_DISPLAY_MS = 2500L
+        private const val PAGE_LOAD_TIMEOUT_MS = 45_000L
+        private const val UNAVAILABLE_DISPLAY_MS = 2_500L
         private const val DOT_INTERVAL_MS = 450L
         private const val LOADING_TEXT = "Loading trailer..."
-        private const val PAGE_LOAD_TIMEOUT_MS = 45_000L
         private val VIDEO_ID = Regex("^[A-Za-z0-9_-]{6,20}$")
 
         /** False when [videoId] isn't a YouTube video ID this player accepts. */
@@ -320,7 +320,7 @@ class YoutubeTrailerActivity : Activity() {
                       if (e.data === YT.PlayerState.PLAYING) SiloTrailer.onPlaying();
                       if (e.data === YT.PlayerState.ENDED) SiloTrailer.onEnded();
                     },
-                    onError: function (e) { SiloTrailer.onError(e.data); }
+                    onError: function () { SiloTrailer.onError(); }
                   }
                 });
               }

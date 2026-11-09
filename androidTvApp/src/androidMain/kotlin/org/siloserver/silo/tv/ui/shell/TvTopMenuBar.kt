@@ -764,7 +764,7 @@ private fun TvSiloWordmark(
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxHeight()
-                .aspectRatio(TvSiloWordmarkAspect),
+                .aspectRatio(TvCrownPillImageAspect),
         )
         Spacer(modifier = Modifier.width(6.dp))
         Box(
@@ -778,9 +778,8 @@ private fun TvSiloWordmark(
     }
 }
 
-/** Brand lockup height inside the 32dp bar; the PNG is 764×400. */
-private val TvSiloWordmarkHeight = 30.dp
-private const val TvSiloWordmarkAspect = 704f / 600f
+/** The crown image in the crown pill is 704×600. */
+private const val TvCrownPillImageAspect = 704f / 600f
 
 /**
  * A center-cluster type tab with inverted-capsule chrome (§5.1):
