@@ -9,7 +9,7 @@ private val DIRECTOR_JOBS = setOf("director")
 private val WRITER_JOBS = setOf("writer", "screenplay", "story", "teleplay")
 
 /**
- * BK fork: the "Cast & Crew" rail with the key crew (directors, then writers)
+ * BK: the "Cast & Crew" rail with the key crew (directors, then writers)
  * placed ahead of the cast (creator, directors, then writers), as the web app does. Each crew member is shown as
  * a card whose caption is their job, and opens the same person page.
  */
@@ -57,7 +57,7 @@ private fun CastMember.railGroup(): String = when {
 }
 
 /**
- * BK fork: the small vertical label shown in front of the first card of each
+ * BK: the small vertical label shown in front of the first card of each
  * group in the Cast & Crew rail (the web app's "WRITERS" / "CAST" dividers).
  * Returns null for the first card and for cards that continue a group.
  */

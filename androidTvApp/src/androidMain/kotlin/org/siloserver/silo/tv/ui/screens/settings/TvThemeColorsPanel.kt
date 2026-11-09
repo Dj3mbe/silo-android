@@ -60,6 +60,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import org.siloserver.silo.tv.ui.focus.TvFocusAcquisitionBudgetMillis
+import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 import org.siloserver.silo.tv.ui.components.rememberTvDialogInitialFocus
 import org.siloserver.silo.tv.ui.components.tvDialogSurface
 import org.siloserver.silo.tv.ui.theme.AccentPreset
@@ -158,7 +160,6 @@ internal fun TvThemeColorsPanel(onDismiss: () -> Unit) {
 
 private val ListHeight = 204.dp
 
-private const val FocusAttempts = 40
 private const val FocusRetryMillis = 60L
 
 /**
@@ -169,11 +170,12 @@ private const val FocusRetryMillis = 60L
 @Composable
 private fun FocusTargetEffect(target: FocusRequester, targetFocused: () -> Boolean) {
     LaunchedEffect(target) {
-        repeat(FocusAttempts) {
-            delay(FocusRetryMillis)
-            if (targetFocused()) return@LaunchedEffect
-            runCatching { target.requestFocus() }
-        }
+        requestFocusUntilObserved(
+            maxAttempts = (TvFocusAcquisitionBudgetMillis / FocusRetryMillis).toInt(),
+            awaitAttempt = { delay(FocusRetryMillis) },
+            requestFocus = target::requestFocus,
+            isFocused = targetFocused,
+        )
     }
 }
 
@@ -288,13 +290,13 @@ private fun ThemeGlassTile(modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = "Glass",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 15.sp),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
                 color = foreground,
                 maxLines = 1,
             )
             Text(
                 text = if (on) "On" else "Off",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
                 color = foreground.copy(alpha = 0.62f),
                 maxLines = 1,
             )
@@ -332,7 +334,7 @@ private fun ThemeLookTile(look: TvThemeLook, modifier: Modifier = Modifier) {
             }
             Text(
                 text = look.label,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 15.sp),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
                 color = if (isFocused) FocusedContent else Color.White,
                 maxLines = 1,
             )
@@ -385,7 +387,7 @@ private fun ThemeColorList(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = title.uppercase(),
-            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp, lineHeight = 18.sp),
             color = Color.White.copy(alpha = 0.55f),
             modifier = Modifier.padding(start = 4.dp),
         )
@@ -477,7 +479,7 @@ private fun ThemeColorRow(
             row.note?.let {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
                     color = foreground.copy(alpha = 0.62f),
                     maxLines = 1,
                 )
@@ -554,8 +556,8 @@ private fun PreviewSeasonChip(label: String, selected: Boolean) {
     ) {
         Text(
             text = label,
-            fontSize = 13.sp,
-            lineHeight = 17.sp,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
             color = if (selected) SelectedContent else Color.White,
             maxLines = 1,
         )
@@ -599,8 +601,8 @@ private fun ThemePreview() {
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = "Loading spinner",
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
                 color = Color.White.copy(alpha = 0.55f),
                 maxLines = 1,
             )

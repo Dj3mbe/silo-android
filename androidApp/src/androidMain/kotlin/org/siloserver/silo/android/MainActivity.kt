@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -73,6 +72,7 @@ import org.siloserver.silo.common.settings.ServerDrivenConfigRefresher
 import org.siloserver.silo.common.startup.StartupArtworkPlan
 import org.siloserver.silo.common.startup.warmAuthenticatedStartup
 import org.siloserver.silo.common.startup.warmProfileSelectionStartup
+import org.siloserver.silo.common.ui.BkUpdater
 import org.siloserver.silo.common.ui.components.StartupSplashVideo
 import org.siloserver.silo.network.ServerRegistry
 import org.siloserver.silo.network.TokenManager
@@ -157,8 +157,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Fork: offer an in-app update when a newer BK build is published.
-        org.siloserver.silo.common.ui.BkUpdater.checkOnLaunch(this, org.siloserver.silo.android.BuildConfig.VERSION_CODE, "BK-phone.apk")
+        // BK: offer an in-app update when a newer BK build is published.
+        BkUpdater.checkOnLaunch(this, BuildConfig.VERSION_CODE, "BK-phone.apk")
         consumedExternalRoute = savedInstanceState?.getString(STATE_CONSUMED_EXTERNAL_ROUTE)
         enableEdgeToEdge()
         maybeRequestNotificationPermission()
@@ -216,7 +216,7 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxSize()
                                 .background(Color.Black),
                         ) {
-                            // BK fork: wider than the screen, so the logo stays a good size
+                            // BK: wider than the screen, so the logo stays a good size
                             // (the video fades to black at its edges, so no box is visible).
                             val videoWidth = maxWidth * 1.6f
                             StartupSplashVideo(

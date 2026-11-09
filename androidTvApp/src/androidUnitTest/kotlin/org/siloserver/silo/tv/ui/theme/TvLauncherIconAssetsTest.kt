@@ -29,24 +29,13 @@ class TvLauncherIconAssetsTest {
         assertEquals(0, foreground.alphaAt(foreground.width / 2, foreground.height - 1), "Bottom edge should be transparent.")
         assertEquals(0, foreground.alphaAt(0, foreground.height / 2), "Left edge should be transparent.")
         assertEquals(0, foreground.alphaAt(foreground.width - 1, foreground.height / 2), "Right edge should be transparent.")
-        assertEquals(
-            0,
-            foreground.alphaAt(foreground.width / 2, foreground.height / 2),
-            "The adaptive foreground should be mark-only, not a centered opaque square tile.",
-        )
-
+        // BK: the crown is wider than Silo's tall mark and solid at its centre,
+        // so check the safe zone (the middle 288 of 432 px) instead of the
+        // Silo mark's exact bounds.
         val bounds = foreground.opaqueBounds()
         assertTrue(
-            bounds.minX in 170..185 && bounds.maxX in 245..265,
-            "Opaque mark should stay centered horizontally inside the adaptive safe zone: $bounds",
-        )
-        assertTrue(
-            bounds.minY in 80..100 && bounds.maxY in 330..355,
-            "Opaque mark should stay vertically inset inside the adaptive safe zone: $bounds",
-        )
-        assertTrue(
-            bounds.width in 70..100 && bounds.height in 240..275,
-            "Adaptive foreground should contain a tall Silo mark, not a full tile: $bounds",
+            bounds.minX >= 72 && bounds.maxX <= 359 && bounds.minY >= 72 && bounds.maxY <= 359,
+            "Opaque mark should stay inside the adaptive safe zone: $bounds",
         )
     }
 
@@ -105,36 +94,13 @@ class TvLauncherIconAssetsTest {
     }
 
     @Test
-    fun tvBannerRemainsOpaqueWordmarkAtRequiredDimensions() {
+    fun tvBannerIsOpaqueAtRequiredDimensions() {
+        // BK: the banner is the crown alone, with no white wordmark; the crown's
+        // placement is checked by tvBannerKeepsColorMarkInsideTheFireTvSquareSafeArea.
         val banner = ImageIO.read(File("src/androidMain/res/drawable/tv_banner.png"))
         assertEquals(320, banner.width)
         assertEquals(180, banner.height)
         assertFalse(banner.colorModel.hasAlpha())
-
-        val wordmarkPixels = buildList {
-            for (y in 0 until banner.height) {
-                for (x in 0 until banner.width) {
-                    val rgb = banner.getRGB(x, y)
-                    if (rgb.red() > 230 && rgb.green() > 230 && rgb.blue() > 230) {
-                        add(x to y)
-                    }
-                }
-            }
-        }
-        assertTrue(wordmarkPixels.size > 500, "TV banner must retain the white Silo wordmark.")
-        val wordmarkBounds = wordmarkPixels.pixelBounds()
-        assertTrue(
-            wordmarkBounds.minX >= 70 && wordmarkBounds.maxX <= 249,
-            "White wordmark must remain inside Fire TV's centered square crop: $wordmarkBounds",
-        )
-        assertTrue(
-            wordmarkBounds.width in 40..180 && wordmarkBounds.height in 10..90,
-            "White wordmark must retain a complete, readable shape: $wordmarkBounds",
-        )
-        assertTrue(
-            wordmarkBounds.width * wordmarkBounds.height >= 500,
-            "White wordmark bounds must not collapse to a small or fragmented mark: $wordmarkBounds",
-        )
     }
 
     @Test
@@ -180,23 +146,6 @@ private data class AlphaBounds(
     val width: Int = maxX - minX + 1
     val height: Int = maxY - minY + 1
 }
-
-private data class PixelBounds(
-    val minX: Int,
-    val minY: Int,
-    val maxX: Int,
-    val maxY: Int,
-) {
-    val width: Int = maxX - minX + 1
-    val height: Int = maxY - minY + 1
-}
-
-private fun List<Pair<Int, Int>>.pixelBounds(): PixelBounds = PixelBounds(
-    minX = minOf { it.first },
-    minY = minOf { it.second },
-    maxX = maxOf { it.first },
-    maxY = maxOf { it.second },
-)
 
 private fun java.awt.image.BufferedImage.opaqueBounds(): AlphaBounds {
     var minX = width

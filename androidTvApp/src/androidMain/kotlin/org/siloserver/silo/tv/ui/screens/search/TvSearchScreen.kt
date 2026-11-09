@@ -1378,9 +1378,6 @@ private fun SearchFeedbackMessage(
 private fun searchFieldPrompt(mediaTypes: List<TvSearchMediaType>): String =
     "Search ${availableMediaNames(mediaTypes)}"
 
-private fun availableMediaDescription(mediaTypes: List<TvSearchMediaType>): String =
-    "Find ${availableMediaNames(mediaTypes)} in one place."
-
 private fun availableMediaNames(mediaTypes: List<TvSearchMediaType>): String {
     val names = mediaTypes
         .filterNot { it == TvSearchMediaType.All }

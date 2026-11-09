@@ -13,10 +13,6 @@ import androidx.core.view.WindowCompat
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -24,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -41,6 +36,7 @@ import org.siloserver.silo.common.settings.TitleArtStore
 import org.siloserver.silo.common.startup.StartupArtworkPlan
 import org.siloserver.silo.common.startup.warmAuthenticatedStartup
 import org.siloserver.silo.common.startup.warmProfileSelectionStartup
+import org.siloserver.silo.common.ui.BkUpdater
 import org.siloserver.silo.common.ui.components.StartupSplashVideo
 import org.siloserver.silo.common.ui.components.StartupSplashResizeMode
 import org.siloserver.silo.network.IdentityTransition
@@ -123,8 +119,8 @@ class MainTvActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Fork: offer an in-app update when a newer BK build is published.
-        org.siloserver.silo.common.ui.BkUpdater.checkOnLaunch(this, org.siloserver.silo.tv.BuildConfig.VERSION_CODE, "BK-tv.apk")
+        // BK: offer an in-app update when a newer BK build is published.
+        BkUpdater.checkOnLaunch(this, BuildConfig.VERSION_CODE, "BK-tv.apk")
 
         // Own our window insets so WindowInsets.ime is dispatched to Compose.
         // The login/server-setup screens already use imePadding()+bringIntoView
@@ -241,28 +237,21 @@ class MainTvActivity : ComponentActivity() {
                                 .focusable(),
                         ) {
                             if (!splashPlaybackComplete) {
-                                // tvOS StartupSplashView parity: the video plays in a
-                                // SMALL centered box — min(25% of screen width, 440pt
-                                // → 220dp at Android TV scale) — on black, NOT
-                                // full-bleed (full-bleed rendered the logo 4x too
-                                // large; QA 2026-07-08).
-                                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                                    // BK fork: the splash fills the whole screen (the video
-                                    // fades to black at its own edges, so no box is visible).
-                                    StartupSplashVideo(
-                                        modifier = Modifier.fillMaxSize(),
-                                        resizeMode = StartupSplashResizeMode.Crop,
-                                        backgroundColor = splashBackground,
-                                        // tvOS parity: the splash completes at video end
-                                        // or 4s, whichever comes first (StartupSplashView
-                                        // maximumDisplayDuration) — never a floor past it.
-                                        maxVisibleMillis = 4_000L,
-                                        onPlaybackComplete = {
-                                            splashPlaybackComplete = true
-                                            hasShownColdSplash = true
-                                        },
-                                    )
-                                }
+                                // BK: the splash fills the screen; the video fades to black at
+                                // its own edges, so no box is visible.
+                                StartupSplashVideo(
+                                    modifier = Modifier.fillMaxSize(),
+                                    resizeMode = StartupSplashResizeMode.Crop,
+                                    backgroundColor = splashBackground,
+                                    // tvOS parity: the splash completes at video end
+                                    // or 4s, whichever comes first (StartupSplashView
+                                    // maximumDisplayDuration) — never a floor past it.
+                                    maxVisibleMillis = 4_000L,
+                                    onPlaybackComplete = {
+                                        splashPlaybackComplete = true
+                                        hasShownColdSplash = true
+                                    },
+                                )
                             }
                         }
                     }

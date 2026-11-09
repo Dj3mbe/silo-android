@@ -1,5 +1,7 @@
 package org.siloserver.silo.tv.ui.screens.player
 
+// Adapted from edrock200/silo-android, AGPL-3.0.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
