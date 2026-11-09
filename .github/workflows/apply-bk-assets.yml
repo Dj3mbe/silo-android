@@ -1,4 +1,6 @@
 name: Apply BK assets
+# Unpacks every bk-upload-*.zip at the top of custom into place, in name order,
+# removes the zips and commits the result.
 on:
   workflow_dispatch:
 permissions:
@@ -7,18 +9,23 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: custom
       - name: Unpack bk-upload zips into place
         run: |
-          for z in bk-upload-*.zip; do
-            unzip -o "$z"
-            rm -f "$z"
+          shopt -s nullglob
+          zips=(bk-upload-*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "No bk-upload zips to apply."
+            exit 0
+          fi
+          for z in "${zips[@]}"; do
+            unzip -oq "$z"
+            git rm -q -- "$z"
           done
-          rm -f androidTvApp/src/androidMain/res/drawable/silo_mark.xml
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Apply BK splash and TV setup mark"
+          git commit -m "chore: apply ${zips[*]}"
           git push origin custom

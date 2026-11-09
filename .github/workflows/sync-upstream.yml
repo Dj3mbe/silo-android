@@ -11,7 +11,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: custom
           fetch-depth: 0
@@ -37,11 +37,16 @@ jobs:
             git commit -m "chore: merge upstream main (kept fork changes on conflicts)"
           fi
 
-          # The fork's BK logo is a PNG named silo_wordmark. Upstream now ships a vector with the
-          # same name, and two drawables with one name break the build, so drop the vector.
-          if [ -f androidTvApp/src/androidMain/res/drawable/silo_wordmark.png ] \
-              && [ -f androidTvApp/src/androidMain/res/drawable/silo_wordmark.xml ]; then
-            git rm -q androidTvApp/src/androidMain/res/drawable/silo_wordmark.xml
-            git commit -m "chore: keep the BK TV logo over the upstream vector"
+          # BK replaces Silo's TV logo and setup mark with PNGs of the same names. Upstream
+          # ships them as vectors, and two drawables with one name break the build, so drop
+          # the vectors.
+          D=androidTvApp/src/androidMain/res/drawable
+          for name in silo_wordmark silo_mark; do
+            if [ -f "$D/$name.png" ] && [ -f "$D/$name.xml" ]; then
+              git rm -q "$D/$name.xml"
+            fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: keep BK's TV logo and setup mark over the upstream vectors"
           fi
           git push origin custom
