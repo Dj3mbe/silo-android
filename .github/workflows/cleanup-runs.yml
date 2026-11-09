@@ -1,0 +1,33 @@
+name: Clean up failed runs
+# Deletes the history of failed and cancelled workflow runs older than the given
+# number of days. Only run records and their logs are removed; code, branches,
+# releases and settings are untouched. Run it by hand from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Keep runs newer than this many days"
+        default: "1"
+permissions:
+  actions: write
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DAYS: ${{ inputs.days || '1' }}
+    steps:
+      - name: Delete old failed and cancelled runs
+        run: |
+          cutoff=$(date -u -d "-${DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?status=completed&per_page=100" \
+            --jq ".workflow_runs[]
+                  | select(.conclusion == \"failure\" or .conclusion == \"cancelled\" or .conclusion == \"startup_failure\")
+                  | select(.created_at < \"$cutoff\")
+                  | .id" > "$RUNNER_TEMP/ids"
+          count=0
+          while read -r id; do
+            [ -n "$id" ] || continue
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$id" && count=$((count + 1))
+          done < "$RUNNER_TEMP/ids"
+          echo "Deleted $count runs older than $cutoff."
