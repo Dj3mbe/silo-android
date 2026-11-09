@@ -1,0 +1,56 @@
+name: Sync upstream
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: custom
+          fetch-depth: 0
+          # GitHub's built-in token may not push changes to workflow files, which
+          # upstream sometimes makes; SYNC_TOKEN is a token for this repository
+          # with the Workflows permission.
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+      - name: Merge upstream into custom
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/Silo-Server/silo-android.git
+          git fetch upstream main
+          git push origin refs/remotes/upstream/main:refs/heads/main
+
+          # Where upstream and this fork change the same lines, keep the fork's version.
+          if ! git merge upstream/main -X ours -m "chore: merge upstream main"; then
+            # Conflicts -X ours cannot settle (a file one side deleted): keep the fork's side.
+            git ls-files -u | cut -f2 | sort -u | while IFS= read -r path; do
+              if git ls-files -u -- "$path" | grep -q '^[0-9]* [0-9a-f]* 2'; then
+                git checkout --ours -- "$path"
+                git add -- "$path"
+              else
+                git rm -q --cached -- "$path"
+              fi
+            done
+            git commit -m "chore: merge upstream main (kept fork changes on conflicts)"
+          fi
+
+          # BK replaces Silo's TV logo and setup mark with PNGs of the same names. Upstream
+          # ships them as vectors, and two drawables with one name break the build, so drop
+          # the vectors.
+          D=androidTvApp/src/androidMain/res/drawable
+          for name in silo_wordmark silo_mark; do
+            if [ -f "$D/$name.png" ] && [ -f "$D/$name.xml" ]; then
+              git rm -q "$D/$name.xml"
+            fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: keep BK's TV logo and setup mark over the upstream vectors"
+          fi
+          git push origin custom
