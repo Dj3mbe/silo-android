@@ -1,0 +1,84 @@
+name: Merge Silo build 30 into a lab test branch
+# Merges Silo's release v1.0.0-beta.30 into lab on a NEW branch, lab-30.
+# lab and custom are never changed here. Build Lab APKs can then build lab-30.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    env:
+      TARGET: lab-30
+      SILO_TAG: v1.0.0-beta.30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lab
+          fetch-depth: 0
+      - name: Merge Silo build 30
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git remote add silo https://github.com/Silo-Server/silo-android.git
+          git fetch --no-tags silo "refs/tags/${SILO_TAG}:refs/tags/silo-build"
+          git switch -c "$TARGET"
+          F=androidTvApp/src/androidMain
+          if ! git merge --no-ff --no-commit silo-build; then
+            git diff --name-only --diff-filter=U | sort > "$RUNNER_TEMP/conflicts"
+            printf '%s\n' \
+              "$F/AndroidManifest.xml" \
+              "$F/kotlin/org/siloserver/silo/tv/ui/shell/TvTopMenuBar.kt" \
+              "$F/res/drawable/silo_wordmark.png" | sort > "$RUNNER_TEMP/allowed"
+            if ! diff -q "$RUNNER_TEMP/allowed" "$RUNNER_TEMP/conflicts" >/dev/null; then
+              echo "::error::Unexpected conflicts. Nothing was pushed."
+              cat "$RUNNER_TEMP/conflicts"
+              git merge --abort
+              exit 1
+            fi
+            # Manifest and top bar: keep BK's side of each clash.
+            for f in "$F/AndroidManifest.xml" "$F/kotlin/org/siloserver/silo/tv/ui/shell/TvTopMenuBar.kt"; do
+              python3 - "$f" <<'PY'
+          import re, sys
+          p = sys.argv[1]
+          s = open(p, encoding="utf-8").read()
+          s = re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n.*?>>>>>>> [^\n]*\n", r"\1", s, flags=re.S)
+          open(p, "w", encoding="utf-8").write(s)
+          PY
+              git add -- "$f"
+            done
+            # Silo swapped its wordmark PNG for a vector. Lab keeps its own PNG,
+            # so the vector (same resource name) is not taken.
+            git add -- "$F/res/drawable/silo_wordmark.png"
+          fi
+          git rm -qf --ignore-unmatch -- "$F/res/drawable/silo_wordmark.xml"
+      - name: Use Silo's voice search on this test branch
+        run: |
+          f=androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/search/TvSearchScreen.kt
+          grep -q 'val useInAppVoice = inAppVoice.isAvailable' "$f"
+          sed -i 's/val useInAppVoice = inAppVoice.isAvailable/val useInAppVoice = false/' "$f"
+          git add -- "$f"
+      - name: Check the result before committing
+        run: |
+          if git diff --cached --name-only HEAD -- '*/res/*.png' '*/res/*.mp4' '*/res/*.webp' | grep .; then
+            echo "::error::An image or video would change."; exit 1
+          fi
+          if git grep --cached -nE '^(<<<<<<<|>>>>>>>) ' -- '*.kt' '*.kts' '*.xml' '*.yml'; then
+            echo "::error::Conflict markers left in the merge."; exit 1
+          fi
+          if ! git diff --cached --quiet HEAD -- .github; then
+            echo "::error::The merge would change a workflow."; exit 1
+          fi
+          if git cat-file -e :androidTvApp/src/androidMain/res/drawable/silo_wordmark.xml 2>/dev/null; then
+            echo "::error::Duplicate wordmark resource."; exit 1
+          fi
+          if git grep --cached -nwE 'SelectedContainer|ChromeSelectedFill|TvPlayerChrome\.Selected|TvPairTile' -- androidTvApp; then
+            echo "::error::Code still uses a name lab removed."; exit 1
+          fi
+          git cat-file -e :androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/search/LegacyTvVoiceSearch.kt
+          git cat-file -e :androidTvApp/src/androidMain/kotlin/org/siloserver/silo/tv/ui/screens/search/TvInAppVoice.kt
+          git grep --cached -n 'RecognitionService' -- androidTvApp/src/androidMain/AndroidManifest.xml
+      - name: Commit and push the test branch
+        run: |
+          git commit -m "Merge Silo build 30 into lab (test branch)"
+          git push origin "HEAD:refs/heads/${TARGET}"
