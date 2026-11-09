@@ -1,0 +1,33 @@
+name: Sync lab with custom
+# Brings the lab branch up to date with custom. Lab keeps only its own
+# bk-upload-*.zip files (its TEST BUILD images, unpacked by Build Lab APKs at
+# build time); every other file ends up identical to custom.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: lab
+          fetch-depth: 0
+      - name: Merge custom into lab
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin custom
+          if ! git merge --no-edit -m "chore: sync lab with custom" origin/custom; then
+            echo "::error::The merge has conflicts. Nothing was pushed."
+            git diff --name-only --diff-filter=U
+            exit 1
+          fi
+          extra=$(git diff --name-only origin/custom HEAD | grep -v '^bk-upload-[^/]*\.zip$' || true)
+          if [ -n "$extra" ]; then
+            echo "::error::Lab would still differ from custom outside its zips. Nothing was pushed."
+            echo "$extra"
+            exit 1
+          fi
+          git push origin HEAD:refs/heads/lab
