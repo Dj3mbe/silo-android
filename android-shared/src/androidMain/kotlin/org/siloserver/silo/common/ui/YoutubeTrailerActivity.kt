@@ -11,6 +11,9 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -56,6 +59,27 @@ class YoutubeTrailerActivity : Activity() {
     private lateinit var videoId: String
 
     private val loadTimeout = Runnable { if (!ready) showUnavailable() }
+
+    // Cycles the loading dots. Hidden dots are made transparent rather than
+    // removed, so the words stay put while the dots change.
+    private val loadingDots = object : Runnable {
+        private var shown = 0
+        override fun run() {
+            val view = cover ?: return
+            shown = (shown + 1) % 4
+            view.text = SpannableString(LOADING_TEXT).apply {
+                if (shown < 3) {
+                    setSpan(
+                        ForegroundColorSpan(Color.TRANSPARENT),
+                        LOADING_TEXT.length - 3 + shown,
+                        LOADING_TEXT.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                    )
+                }
+            }
+            handler.postDelayed(this, DOT_INTERVAL_MS)
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,13 +129,13 @@ class YoutubeTrailerActivity : Activity() {
         view.addJavascriptInterface(Bridge(), "SiloTrailer")
         // Black until the trailer plays, so YouTube's own error page never shows.
         val coverView = TextView(this).apply {
-            text = "Loading trailer…"
             setTextColor(Color.WHITE)
             textSize = 28f
             gravity = Gravity.CENTER
             setBackgroundColor(Color.BLACK)
         }
         cover = coverView
+        handler.post(loadingDots)
         setContentView(
             FrameLayout(this).apply {
                 addView(view, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -194,6 +218,7 @@ class YoutubeTrailerActivity : Activity() {
         if (unavailableShown || isFinishing) return
         unavailableShown = true
         handler.removeCallbacks(loadTimeout)
+        handler.removeCallbacks(loadingDots)
         cover?.apply {
             text = "Trailer not available"
             visibility = View.VISIBLE
@@ -226,6 +251,7 @@ class YoutubeTrailerActivity : Activity() {
         fun onPlaying() {
             handler.post {
                 startedPlaying = true
+                handler.removeCallbacks(loadingDots)
                 cover?.visibility = View.GONE
             }
         }
@@ -236,6 +262,8 @@ class YoutubeTrailerActivity : Activity() {
         private const val EMBED_ORIGIN = "https://www.siloserver.org"
         private const val LOAD_TIMEOUT_MS = 20_000L
         private const val UNAVAILABLE_DISPLAY_MS = 2500L
+        private const val DOT_INTERVAL_MS = 450L
+        private const val LOADING_TEXT = "Loading trailer..."
         private const val PAGE_LOAD_TIMEOUT_MS = 45_000L
         private val VIDEO_ID = Regex("^[A-Za-z0-9_-]{6,20}$")
 
