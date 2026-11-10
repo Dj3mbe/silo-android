@@ -338,6 +338,20 @@ androidComponents {
     }
 }
 
+// BK: the catalog's text with BK's name in it, in every language. It is generated at
+// build time so the catalog files stay exactly as Silo ships them; an app resource
+// takes precedence over the shared module's resource of the same name.
+val brandedCatalogDir = layout.buildDirectory.dir("generated/bkBrand/res")
+val brandCatalog by tasks.registering(Sync::class) {
+    val siloName = Regex("""\bSilo\b""")
+    from(rootProject.file("android-shared/src/androidMain/res")) { include("values*/strings_catalog.xml") }
+    into(brandedCatalogDir)
+    filteringCharset = "UTF-8"
+    filter { line: String -> siloName.replace(line, "BK") }
+}
+android.sourceSets["main"].res.srcDir(brandedCatalogDir.get().asFile)
+tasks.named("preBuild") { dependsOn(brandCatalog) }
+
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     debugImplementation(libs.compose.ui.test.manifest)
