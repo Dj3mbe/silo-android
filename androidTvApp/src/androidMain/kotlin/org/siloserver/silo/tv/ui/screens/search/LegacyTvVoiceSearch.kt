@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import org.siloserver.silo.common.R as CommonR
 
 /** Android 11 rejects the Google TV activity's in-process recognition request. */
 @Composable
@@ -107,12 +108,12 @@ internal fun rememberLegacyTvVoiceSearch(
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                         "Didn't hear a title. Try again."
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
-                        "Couldn't connect to voice search. Check your connection and try again."
+                        context.getString(CommonR.string.search_voiceNetworkErrorTv)
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
                         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                            "Allow microphone access for Silo in Settings to use voice search."
+                            context.getString(CommonR.string.search_voiceMicPermissionTv)
                         } else {
-                            "The voice service couldn't access the microphone. Check microphone access in device settings and try again."
+                            context.getString(CommonR.string.search_voiceServiceMicDeniedTv)
                         }
                     else -> "Voice search couldn't start. Try again."
                 })

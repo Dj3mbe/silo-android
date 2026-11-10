@@ -46,6 +46,6 @@ fun openYoutubeTrailerExternally(context: Context, videoId: String) {
         runCatching { context.startActivity(intent) }.isSuccess
     }
     if (!opened) {
-        Toast.makeText(context, "No app is available to open this trailer", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.shell_trailer_noApp), Toast.LENGTH_SHORT).show()
     }
 }

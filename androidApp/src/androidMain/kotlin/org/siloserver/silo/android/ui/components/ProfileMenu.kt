@@ -15,9 +15,9 @@ import androidx.compose.material.icons.rounded.SwitchAccount
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import org.siloserver.silo.android.R
 import org.koin.compose.koinInject
 import org.siloserver.silo.android.ui.screens.profiles.ProfileAvatar
+import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.common.ui.components.avatarRef
 import org.siloserver.silo.common.ui.marquee.ServerBranding
 import org.siloserver.silo.model.profile.Profile
@@ -100,7 +100,7 @@ fun ProfileMenu(
         }
         if (onRequestsClick != null) {
             SiloMenuItem(
-                label = "Requests",
+                label = stringResource(CommonR.string.menu_requests),
                 icon = Icons.Rounded.Inbox,
                 onClick = {
                     onDismissRequest()
@@ -110,7 +110,7 @@ fun ProfileMenu(
         }
         if (onWatchPartyClick != null) {
             SiloMenuItem(
-                label = "Watch Party",
+                label = stringResource(CommonR.string.menu_profileMenu_watchParty),
                 icon = Icons.Rounded.Groups,
                 onClick = {
                     onDismissRequest()
@@ -119,7 +119,7 @@ fun ProfileMenu(
             )
         }
         SiloMenuItem(
-            label = "Settings",
+            label = stringResource(CommonR.string.menu_settings),
             icon = Icons.Rounded.Settings,
             showDivider = hasFeatureGroup,
             onClick = {
@@ -128,7 +128,7 @@ fun ProfileMenu(
             },
         )
         SiloMenuItem(
-            label = "Switch profile",
+            label = stringResource(CommonR.string.menu_profileMenu_switchProfile),
             icon = Icons.Rounded.SwitchAccount,
             onClick = {
                 onDismissRequest()
@@ -136,7 +136,7 @@ fun ProfileMenu(
             },
         )
         SiloMenuItem(
-            label = stringResource(R.string.change_account_menu),
+            label = stringResource(CommonR.string.changeAccount_menu),
             icon = Icons.Rounded.ManageAccounts,
             onClick = {
                 onDismissRequest()
@@ -144,7 +144,7 @@ fun ProfileMenu(
             },
         )
         SiloMenuItem(
-            label = "Sign out",
+            label = stringResource(CommonR.string.common_signOut),
             icon = Icons.AutoMirrored.Rounded.Logout,
             destructive = true,
             showDivider = true,

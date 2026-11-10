@@ -22,6 +22,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -30,6 +31,8 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import org.siloserver.silo.common.diagnostics.DiagnosticsPrompt
+import org.siloserver.silo.common.diagnostics.diagnosticsReportsReadyText
+import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.tv.ui.focus.TvModalRestoreMaxAttempts
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 import org.siloserver.silo.tv.ui.focus.tvModalFocusBoundary
@@ -86,17 +89,17 @@ fun TvDiagnosticsPromptScreen(
                 ) {
                     if (confirmAlways && allowAlwaysSend) {
                         Text(
-                            "Always send crash reports?",
+                            stringResource(CommonR.string.diagnostics_alwaysSend_title),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
-                        Text(
-                            "Future eligible reports may upload automatically " +
-                                "until you change this setting.",
-                        )
-                        TvDiagnosticsAction("Always send", onClick = onAlwaysSend)
+                        Text(stringResource(CommonR.string.diagnostics_alwaysSend_tvBody))
                         TvDiagnosticsAction(
-                            "Cancel",
+                            stringResource(CommonR.string.diagnostics_alwaysSend_action),
+                            onClick = onAlwaysSend,
+                        )
+                        TvDiagnosticsAction(
+                            stringResource(CommonR.string.common_cancel),
                             onClick = { confirmAlways = false },
                             modifier = Modifier.focusRequester(safeFocus),
                         )
@@ -106,17 +109,7 @@ fun TvDiagnosticsPromptScreen(
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
-                        Text(
-                            if (prompt.reportCount == 1) {
-                                "A ${prompt.reportType.tvDisplayName().lowercase()} " +
-                                    "report is ready. Review it before deciding " +
-                                    "whether to send it."
-                            } else {
-                                "${prompt.reportCount} diagnostics reports are " +
-                                    "ready. Review them before deciding whether " +
-                                    "to send them."
-                            },
-                        )
+                        Text(diagnosticsReportsReadyText(prompt))
                         if (!allowAlwaysSend) {
                             Text(
                                 "The report includes the BK app version and build, Android version, device " +
@@ -127,16 +120,16 @@ fun TvDiagnosticsPromptScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        TvDiagnosticsAction("Review", onClick = onReview)
-                        TvDiagnosticsAction("Send", onClick = onSend)
+                        TvDiagnosticsAction(stringResource(CommonR.string.diagnostics_prompt_review), onClick = onReview)
+                        TvDiagnosticsAction(stringResource(CommonR.string.diagnostics_consent_confirm), onClick = onSend)
                         if (allowAlwaysSend) {
                             TvDiagnosticsAction(
-                                "Always send",
+                                stringResource(CommonR.string.diagnostics_alwaysSend_action),
                                 onClick = { confirmAlways = true },
                             )
                         }
                         TvDiagnosticsAction(
-                            "Don't send",
+                            stringResource(CommonR.string.diagnostics_prompt_dontSend),
                             onClick = onDontSend,
                             modifier = Modifier.focusRequester(safeFocus),
                         )
@@ -187,7 +180,7 @@ internal fun TvDiagnosticsConfirmation(
                 Text(message)
                 TvDiagnosticsAction(confirmLabel, onClick = onConfirm)
                 TvDiagnosticsAction(
-                    "Cancel",
+                    stringResource(CommonR.string.common_cancel),
                     onClick = onDismiss,
                     modifier = Modifier.focusRequester(cancelFocus),
                 )

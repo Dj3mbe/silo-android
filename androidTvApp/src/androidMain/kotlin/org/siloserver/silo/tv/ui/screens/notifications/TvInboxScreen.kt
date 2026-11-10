@@ -1,5 +1,8 @@
 package org.siloserver.silo.tv.ui.screens.notifications
 
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import org.siloserver.silo.common.R as CommonR
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -64,6 +67,7 @@ import org.siloserver.silo.tv.ui.theme.sectionEyebrow
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import java.time.Instant
+import org.siloserver.silo.common.i18n.text
 
 /**
  * TV notifications inbox: a focusable, D-pad-traversable newest-first list of
@@ -188,12 +192,12 @@ fun TvInboxScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             Text(
-                text = "NOTIFICATIONS",
+                text = stringResource(CommonR.string.notifications_inbox_eyebrow),
                 style = sectionEyebrow,
                 color = SiloBlue.copy(alpha = 0.92f),
             )
             Text(
-                text = "Your Inbox",
+                text = stringResource(CommonR.string.notifications_inbox_tvTitle),
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -201,7 +205,7 @@ fun TvInboxScreen(
 
         if (error != null) {
             Card(onClick = { scope.launch { repository.refresh() } }) {
-                Text("${error} Retry", modifier = Modifier.padding(16.dp))
+                Text(stringResource(CommonR.string.notifications_inbox_errorRetry, error?.text?.text().orEmpty()), modifier = Modifier.padding(16.dp))
             }
         }
         when {
@@ -276,7 +280,7 @@ private fun MarkAllReadCard(
             contentAlignment = Alignment.CenterStart,
         ) {
             Text(
-                text = "Mark all read",
+                text = stringResource(CommonR.string.notifications_inbox_markAllRead),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
@@ -292,6 +296,10 @@ private fun TvInboxRow(
     focusRequester: FocusRequester?,
     onClick: () -> Unit,
 ) {
+    val resources = LocalResources.current
+    val title = card.title.resolve(resources)
+    val subtitle = card.subtitle?.resolve(resources)
+    val relativeTime = card.relativeTime?.resolve(resources).orEmpty()
     Card(
         onClick = onClick,
         shape = CardDefaults.shape(shape = cardShape),
@@ -320,7 +328,7 @@ private fun TvInboxRow(
                 ThumbhashImage(
                     url = card.posterUrl,
                     thumbhash = card.posterThumbhash,
-                    contentDescription = card.title,
+                    contentDescription = title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .width(56.dp)
@@ -333,14 +341,14 @@ private fun TvInboxRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = card.title,
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = if (card.isUnread) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                card.subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
+                subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
@@ -354,9 +362,9 @@ private fun TvInboxRow(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (card.relativeTime.isNotBlank()) {
+                if (relativeTime.isNotBlank()) {
                     Text(
-                        text = card.relativeTime,
+                        text = relativeTime,
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White.copy(alpha = 0.56f),
                     )
@@ -388,12 +396,12 @@ private fun InboxEmptyState() {
                 modifier = Modifier.size(30.dp),
             )
             Text(
-                text = "You're all caught up",
+                text = stringResource(CommonR.string.notifications_inbox_emptyTitle),
                 style = MaterialTheme.typography.headlineSmall,
                 color = Color.White,
             )
             Text(
-                text = "New episode and request notifications will show up here.",
+                text = stringResource(CommonR.string.notifications_inbox_emptyBody),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.62f),
             )

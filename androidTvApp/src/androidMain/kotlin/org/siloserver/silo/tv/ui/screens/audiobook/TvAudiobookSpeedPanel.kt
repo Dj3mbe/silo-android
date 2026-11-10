@@ -55,7 +55,7 @@ fun TvAudiobookSpeedPanel(
     val focusRequester = remember { FocusRequester() }
 
     TvAudiobookOverlayScaffold(
-        title = "Speed",
+        title = stringResource(CommonR.string.player_settings_speed),
         initialFocus = focusRequester,
         modifier = modifier,
         onAcquisitionFailed = onFocusAcquisitionFailed,
@@ -72,7 +72,7 @@ fun TvAudiobookSpeedPanel(
                 focusRequester = focusRequester,
             )
             TvAudiobookOverlayRow(
-                label = "Set ${formatSpeedLabel(currentSpeed)} as default",
+                label = stringResource(CommonR.string.audiobook_speed_setDefault, formatSpeedLabel(currentSpeed)),
                 isCurrent = false,
                 onSelect = { onSetDefault(currentSpeed) },
                 modifier = Modifier.fillMaxWidth(),
@@ -121,7 +121,7 @@ private fun SpeedFineAdjustRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Fine adjust", style = MaterialTheme.typography.bodyLarge, color = fg, modifier = Modifier.weight(1f))
+        Text(stringResource(CommonR.string.audiobook_speed_fineAdjust), style = MaterialTheme.typography.bodyLarge, color = fg, modifier = Modifier.weight(1f))
         Text("◀", style = MaterialTheme.typography.bodyLarge, color = fg.copy(alpha = 0.7f))
         Spacer(Modifier.width(16.dp))
         Text(formatSpeedLabel(speed), style = MaterialTheme.typography.bodyLarge, color = fg)
@@ -131,10 +131,6 @@ private fun SpeedFineAdjustRow(
 }
 
 private fun formatSpeedLabel(speed: Float): String {
-    val s = if (speed % 1f == 0f) {
-        speed.toInt().toString()
-    } else {
-        "%.2f".format(speed).trimEnd('0').trimEnd('.')
-    }
+    val s = LocaleFormat.decimal(speed.toDouble(), maxFractionDigits = 2)
     return "${s}×"
 }

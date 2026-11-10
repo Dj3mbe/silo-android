@@ -41,13 +41,13 @@ internal fun TvDescriptionTranslationSection(
             onClick = onTranslate,
             modifier = modifier,
         ) {
-            Text("Translation failed — retry")
+            Text(stringResource(CommonR.string.detail_translation_failedRetry))
         }
         DescriptionTranslationPhase.Idle -> androidx.tv.material3.Button(
             onClick = onTranslate,
             modifier = modifier,
         ) {
-            Text("Translate description")
+            Text(stringResource(CommonR.string.detail_translation_translateDescription))
         }
     }
 }
@@ -70,7 +70,7 @@ internal fun TvTranslatingDescriptionLabel(modifier: Modifier = Modifier) {
             color = FocusAccent,
         )
         Text(
-            text = "Translating description…",
+            text = stringResource(CommonR.string.detail_translation_translatingDescription),
             style = MaterialTheme.typography.labelLarge,
             color = Color.White.copy(alpha = 0.75f),
         )
