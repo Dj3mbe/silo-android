@@ -1,0 +1,96 @@
+name: Clean up
+# Keeps the repository tidy: deletes old workflow run records, main releases
+# beyond the newest few (with their tags and APKs), and build tags that have no
+# release. Code, branches, settings, the Lab release and the newest main releases
+# are untouched. Runs weekly and by hand from the Actions tab.
+on:
+  schedule:
+    - cron: "23 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      failed_days:
+        description: "Delete failed and cancelled runs older than this many days"
+        default: "1"
+      run_days:
+        description: "Delete all runs older than this many days"
+        default: "30"
+      keep_releases:
+        description: "Main releases to keep"
+        default: "5"
+permissions:
+  actions: write
+  contents: write
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      FAILED_DAYS: ${{ inputs.failed_days || '1' }}
+      RUN_DAYS: ${{ inputs.run_days || '30' }}
+      KEEP: ${{ inputs.keep_releases || '5' }}
+    steps:
+      - name: Delete old workflow runs
+        run: |
+          failed_cutoff=$(date -u -d "-${FAILED_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+          run_cutoff=$(date -u -d "-${RUN_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+          gh api --paginate "repos/$GH_REPO/actions/runs?status=completed&per_page=100" \
+            --jq ".workflow_runs[]
+                  | select(.created_at < \"$run_cutoff\"
+                      or (.created_at < \"$failed_cutoff\"
+                          and (.conclusion == \"failure\" or .conclusion == \"cancelled\" or .conclusion == \"startup_failure\")))
+                  | .id" > "$RUNNER_TEMP/ids"
+          count=0
+          while read -r id; do
+            gh api -X DELETE "repos/$GH_REPO/actions/runs/$id" && count=$((count + 1))
+          done < "$RUNNER_TEMP/ids"
+          echo "RUNS=$count" >> "$GITHUB_ENV"
+
+      # A build that is publishing has a tag before it has a release, so releases
+      # and tags are left alone while one is queued or running.
+      - name: Check for a build in progress
+        id: builds
+        run: |
+          busy=0
+          for status in queued in_progress; do
+            n=$(gh api "repos/$GH_REPO/actions/runs?status=$status&per_page=100" \
+              --jq '[.workflow_runs[] | select(.path | test("build-(apk|lab)\\.yml$"))] | length')
+            busy=$((busy + n))
+          done
+          echo "busy=$busy" >> "$GITHUB_OUTPUT"
+
+      - name: Delete old releases and stray build tags
+        if: steps.builds.outputs.busy == '0'
+        run: |
+          case "$KEEP" in
+            '' | *[!0-9]* | 0) echo "keep_releases must be 1 or more"; exit 1 ;;
+          esac
+          releases=0
+          while read -r tag; do
+            gh release delete "$tag" --yes --cleanup-tag && releases=$((releases + 1))
+          done < <(gh api --paginate "repos/$GH_REPO/releases?per_page=100" \
+            --jq '.[] | select(.draft | not) | select(.tag_name | startswith("build-")) | "\(.published_at) \(.tag_name)"' \
+            | sort -r | tail -n +$((KEEP + 1)) | cut -d' ' -f2)
+
+          gh api --paginate "repos/$GH_REPO/releases?per_page=100" --jq '.[].tag_name' | sort -u > "$RUNNER_TEMP/released"
+          gh api --paginate "repos/$GH_REPO/git/matching-refs/tags/build-" \
+            --jq '.[].ref | sub("^refs/tags/"; "")' | sort -u > "$RUNNER_TEMP/tags"
+          tags=0
+          while read -r tag; do
+            gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$tag" && tags=$((tags + 1))
+          done < <(comm -23 "$RUNNER_TEMP/tags" "$RUNNER_TEMP/released")
+          echo "RELEASES=$releases" >> "$GITHUB_ENV"
+          echo "TAGS=$tags" >> "$GITHUB_ENV"
+
+      - name: Report
+        env:
+          HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          MSG="Cleanup removed ${RUNS:-0} runs, ${RELEASES:-0} old releases and ${TAGS:-0} stray tags."
+          if [ "${{ steps.builds.outputs.busy }}" != "0" ]; then
+            MSG="$MSG Releases and tags were skipped because a build was running."
+          fi
+          echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$HOOK" ] && [ "$((${RUNS:-0} + ${RELEASES:-0} + ${TAGS:-0}))" -gt 0 ]; then
+            curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
+          fi

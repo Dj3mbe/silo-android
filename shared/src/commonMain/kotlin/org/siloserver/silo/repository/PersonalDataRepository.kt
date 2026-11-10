@@ -164,6 +164,10 @@ open class PersonalDataRepository(
     suspend fun listHistory(continuation: HistoryContinuationV2? = null, limit: Int = 40): ApiResult<HistoryPageV2> =
         personalDataApi.listHistory(continuation, limit)
 
+    /** Hides an item or series from the watch history. */
+    suspend fun removeFromHistory(contentId: String): ApiResult<Unit> =
+        personalDataApi.removeFromHistory(contentId)
+
     // -- Progress --
 
     /** Legacy sessionless convenience path: admitted playback uses sequenced v2 progress. */

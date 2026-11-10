@@ -7,13 +7,12 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
+import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -23,7 +22,10 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.annotation.ColorInt
 import org.koin.java.KoinJavaComponent.get
 import org.siloserver.silo.common.profiles.ProfileAwayTracker
 
@@ -50,7 +52,9 @@ import org.siloserver.silo.common.profiles.ProfileAwayTracker
 class YoutubeTrailerActivity : Activity() {
 
     private var webView: WebView? = null
-    private var cover: TextView? = null
+    private var cover: View? = null
+    private var spinner: ProgressBar? = null
+    private var status: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
     private var ready = false
     private var handedOff = false
@@ -59,27 +63,6 @@ class YoutubeTrailerActivity : Activity() {
     private lateinit var videoId: String
 
     private val loadTimeout = Runnable { if (!ready) showUnavailable() }
-
-    // Cycles the loading dots. Hidden dots are made transparent rather than
-    // removed, so the words stay put while the dots change.
-    private val loadingDots = object : Runnable {
-        private var shown = 0
-        override fun run() {
-            val view = cover ?: return
-            shown = (shown + 1) % 4
-            view.text = SpannableString(LOADING_TEXT).apply {
-                if (shown < 3) {
-                    setSpan(
-                        ForegroundColorSpan(Color.TRANSPARENT),
-                        LOADING_TEXT.length - 3 + shown,
-                        LOADING_TEXT.length,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                    )
-                }
-            }
-            handler.postDelayed(this, DOT_INTERVAL_MS)
-        }
-    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,14 +111,34 @@ class YoutubeTrailerActivity : Activity() {
         }
         view.addJavascriptInterface(Bridge(), "SiloTrailer")
         // Black until the trailer plays, so YouTube's own error page never shows.
-        val coverView = TextView(this).apply {
+        val spinnerSize = (SPINNER_SIZE_DP * resources.displayMetrics.density).toInt()
+        // The activity's theme predates Material, whose spinner is the one that takes a tint.
+        val spinnerView = ProgressBar(ContextThemeWrapper(this, android.R.style.Theme_Material)).apply {
+            indeterminateTintList =
+                ColorStateList.valueOf(intent.getIntExtra(EXTRA_SPINNER_COLOR, Color.WHITE))
+        }
+        val statusView = TextView(this).apply {
+            text = "Loading trailer"
             setTextColor(Color.WHITE)
-            textSize = 28f
+            textSize = 22f
+            gravity = Gravity.CENTER
+        }
+        val coverView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setBackgroundColor(Color.BLACK)
+            addView(spinnerView, LinearLayout.LayoutParams(spinnerSize, spinnerSize))
+            addView(
+                statusView,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = spinnerSize / 3 },
+            )
         }
         cover = coverView
-        handler.post(loadingDots)
+        spinner = spinnerView
+        status = statusView
         setContentView(
             FrameLayout(this).apply {
                 addView(view, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -204,6 +207,8 @@ class YoutubeTrailerActivity : Activity() {
         }
         webView = null
         cover = null
+        spinner = null
+        status = null
         super.onDestroy()
     }
 
@@ -218,11 +223,9 @@ class YoutubeTrailerActivity : Activity() {
         if (unavailableShown || isFinishing) return
         unavailableShown = true
         handler.removeCallbacks(loadTimeout)
-        handler.removeCallbacks(loadingDots)
-        cover?.apply {
-            text = "Trailer not available"
-            visibility = View.VISIBLE
-        }
+        spinner?.visibility = View.GONE
+        status?.text = "Trailer not available"
+        cover?.visibility = View.VISIBLE
         handler.postDelayed({ finish() }, UNAVAILABLE_DISPLAY_MS)
     }
 
@@ -251,7 +254,6 @@ class YoutubeTrailerActivity : Activity() {
         fun onPlaying() {
             handler.post {
                 startedPlaying = true
-                handler.removeCallbacks(loadingDots)
                 cover?.visibility = View.GONE
             }
         }
@@ -259,19 +261,23 @@ class YoutubeTrailerActivity : Activity() {
 
     companion object {
         private const val EXTRA_VIDEO_ID = "org.siloserver.silo.extra.YOUTUBE_VIDEO_ID"
+        private const val EXTRA_SPINNER_COLOR = "org.siloserver.silo.extra.TRAILER_SPINNER_COLOR"
         private const val EMBED_ORIGIN = "https://www.siloserver.org"
         private const val LOAD_TIMEOUT_MS = 20_000L
         private const val PAGE_LOAD_TIMEOUT_MS = 45_000L
         private const val UNAVAILABLE_DISPLAY_MS = 2_500L
-        private const val DOT_INTERVAL_MS = 450L
-        private const val LOADING_TEXT = "Loading trailer..."
+        private const val SPINNER_SIZE_DP = 64
         private val VIDEO_ID = Regex("^[A-Za-z0-9_-]{6,20}$")
 
-        /** False when [videoId] isn't a YouTube video ID this player accepts. */
-        fun start(context: Context, videoId: String): Boolean {
+        /**
+         * False when [videoId] isn't a YouTube video ID this player accepts.
+         * [spinnerColor] tints the loading spinner.
+         */
+        fun start(context: Context, videoId: String, @ColorInt spinnerColor: Int = Color.WHITE): Boolean {
             if (!VIDEO_ID.matches(videoId)) return false
             val intent = Intent(context, YoutubeTrailerActivity::class.java)
                 .putExtra(EXTRA_VIDEO_ID, videoId)
+                .putExtra(EXTRA_SPINNER_COLOR, spinnerColor)
             if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             return runCatching { context.startActivity(intent) }.isSuccess
         }

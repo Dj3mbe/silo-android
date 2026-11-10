@@ -58,6 +58,9 @@ import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.SiloSecondaryText
 import org.siloserver.silo.tv.ui.theme.TvRailScrollBehavior
 import org.siloserver.silo.tv.ui.theme.tvRailPinOnFocus
+import androidx.compose.ui.res.stringResource
+import org.siloserver.silo.common.R as CommonR
+import org.siloserver.silo.common.i18n.text
 
 @Composable
 internal fun TvDetailTrailersSection(
@@ -75,7 +78,7 @@ internal fun TvDetailTrailersSection(
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         TvDetailSectionHeader(
-            title = "Trailers & More",
+            title = stringResource(CommonR.string.detail_trailers),
             modifier = Modifier.padding(horizontal = TvDetailHorizontalInset),
         )
         TvRailScrollBehavior {
@@ -197,7 +200,7 @@ private fun TvDetailTrailerCard(
         }
 
         Text(
-            text = entry.title,
+            text = entry.title.text(),
             color = if (isFocused) SiloOnSurface else SiloOnSurface.copy(alpha = 0.92f),
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,

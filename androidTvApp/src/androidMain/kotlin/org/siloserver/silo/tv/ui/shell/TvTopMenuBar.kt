@@ -50,6 +50,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +63,8 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import org.siloserver.silo.common.R as CommonR
+import org.siloserver.silo.common.i18n.UiText
 import org.siloserver.silo.tv.ui.focus.claimFocusOrReport
 import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.tv.R
@@ -561,7 +564,7 @@ fun TvTopMenuBar(
             destinations.forEach { destination ->
                 when (destination) {
                     TvRootDestination.Home -> TvTopMenuTab(
-                        label = "Home",
+                        label = stringResource(CommonR.string.topBar_home),
                         isSelected = selectedRoot == TvRootDestination.Home,
                         isFocused = focusedButton == TvTopMenuFocus.Home,
                         canFocus = canFocusButton(TvTopMenuFocus.Home),
@@ -580,7 +583,7 @@ fun TvTopMenuBar(
                         val type = destination.type
                         val panel = TvTopMenuPanel.Root(destination)
                         TvTopMenuTab(
-                            label = type.title,
+                            label = stringResource(type.titleRes),
                             isSelected = selectedRoot == destination,
                             isFocused = focusedButton == TvTopMenuFocus.Tab(type),
                             canFocus = canFocusButton(TvTopMenuFocus.Tab(type)),
@@ -604,7 +607,7 @@ fun TvTopMenuBar(
                     }
 
                     TvRootDestination.ForYou -> TvTopMenuTab(
-                        label = "For You",
+                        label = stringResource(CommonR.string.topBar_forYou),
                         isSelected = selectedRoot == TvRootDestination.ForYou,
                         isFocused = focusedButton == TvTopMenuFocus.ForYou,
                         canFocus = canFocusButton(TvTopMenuFocus.ForYou),
@@ -626,7 +629,7 @@ fun TvTopMenuBar(
                     )
 
                     TvRootDestination.Calendar -> TvTopMenuTab(
-                        label = "Calendar",
+                        label = stringResource(CommonR.string.topBar_calendar),
                         isSelected = selectedRoot == TvRootDestination.Calendar,
                         isFocused = focusedButton == TvTopMenuFocus.Calendar,
                         canFocus = canFocusButton(TvTopMenuFocus.Calendar),
@@ -678,11 +681,12 @@ private val TvClockAvatarSize = 24.dp
 
 /** Minimal account view-data the menu bar + profile dropdown render. */
 data class TvAccountState(
-    val displayName: String = "Profile",
+    /** The profile's name, else the account's username; null shows "Profile" ([shownName]). */
+    val displayName: String? = null,
     /** Avatar ref + server-resolved URL, kept together so neither is lost. */
     val avatar: ProfileAvatarRef = ProfileAvatarRef.None,
-    /** Secondary line under the name in the dropdown header (role / username). */
-    val subtitle: String = "",
+    /** Secondary line under the name in the dropdown header (role / username); null shows none. */
+    val subtitle: UiText? = null,
     /** Active server display name, shown in the dropdown header. */
     val serverName: String = "",
 )
@@ -995,8 +999,9 @@ private fun TvTopMenuAvatar(
     accountState: TvAccountState,
     isFocused: Boolean,
 ) {
-    val avatarText = remember(accountState.avatar, accountState.displayName) {
-        profileAvatarDisplayText(accountState.avatar, accountState.displayName)
+    val displayName = accountState.shownName()
+    val avatarText = remember(accountState.avatar, displayName) {
+        profileAvatarDisplayText(accountState.avatar, displayName)
     }
     val avatarImage = rememberProfileAvatarImage(accountState.avatar)
     // The avatar circle plus a decorative unread badge anchored to its top-end
@@ -1014,7 +1019,7 @@ private fun TvTopMenuAvatar(
                 ThumbhashImage(
                     url = avatarImage.url,
                     thumbhash = null,
-                    contentDescription = accountState.displayName,
+                    contentDescription = displayName,
                     modifier = Modifier.fillMaxHeight(),
                     contentScale = ContentScale.Crop,
                     transparent = true,

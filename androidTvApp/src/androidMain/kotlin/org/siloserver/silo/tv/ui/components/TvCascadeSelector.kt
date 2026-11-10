@@ -52,6 +52,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -59,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
+import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.model.personal.UserLibrary
 import org.siloserver.silo.tv.ui.shell.TvLibraryPill
 import org.siloserver.silo.tv.ui.shell.TvLibraryTabType
@@ -148,25 +150,25 @@ fun TvForYouSelector(
             .padding(CascadePanelPadding)
             .focusGroup(),
     ) {
-        CascadePanelHeader("FOR YOU")
+        CascadePanelHeader(stringResource(CommonR.string.menu_forYou_header))
         // Recommendations first: it is the tab's landing content, so entry
         // focus sits on what the viewer is already looking at.
         CascadeActionRow(
-            title = "Recommendations",
+            title = stringResource(CommonR.string.forYou_recommendations),
             icon = Icons.Filled.AutoAwesome,
             entersPanel = entersPanel,
             focusRequester = recommendationsFocus,
             onSelect = onRecommendations,
         )
         CascadeActionRow(
-            title = "Favorites",
+            title = stringResource(CommonR.string.menu_favorites),
             icon = Icons.Filled.Favorite,
             entersPanel = entersPanel,
             focusRequester = favoritesFocus,
             onSelect = onFavorites,
         )
         CascadeActionRow(
-            title = "Watchlist",
+            title = stringResource(CommonR.string.menu_watchlist),
             icon = Icons.Filled.Bookmark,
             entersPanel = entersPanel,
             focusRequester = watchlistFocus,
@@ -463,7 +465,7 @@ fun TvCascadeSelector(
                         .tvSkylinePanelChrome()
                         .padding(CascadePanelPadding),
                 ) {
-                    CascadePanelHeader(type.librariesHeader)
+                    CascadePanelHeader(stringResource(type.librariesHeaderRes))
                     rowsContent()
                     CascadePanelFooter(isSingleLibrary = false)
                 }
@@ -666,7 +668,7 @@ private fun CascadeSectionRow(
 
     CascadeRowChrome(
         icon = pill.icon,
-        title = pill.title,
+        title = stringResource(pill.titleRes),
         trailingIcon = null,
         isFocused = isFocused,
         interactionSource = interactionSource,

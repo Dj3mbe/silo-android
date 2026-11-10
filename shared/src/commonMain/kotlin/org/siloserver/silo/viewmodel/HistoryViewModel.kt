@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.siloserver.silo.common.i18n.SharedString
+import org.siloserver.silo.common.i18n.UiText
 import org.siloserver.silo.network.ApiResult
 import org.siloserver.silo.network.DefaultIdentityTransitionBarrier
 import org.siloserver.silo.network.IdentityTransitionBarrier
@@ -50,6 +52,13 @@ class HistoryViewModel(
         load(reset = true)
     }
 
+    /** Asks the server to hide [contentId]; the caller drops it with [onRemoved] once it succeeds. */
+    suspend fun remove(contentId: String): ApiResult<Unit> = repository.removeFromHistory(contentId)
+
+    fun onRemoved(contentId: String) = state.update {
+        it.copy(items = it.items.filterNot { item -> item.contentId == contentId }, historyWatches = it.historyWatches - contentId)
+    }
+
     fun retry() = load(reset = true)
     fun refresh() = load(reset = true, refreshing = true)
     fun loadMore() {
@@ -87,11 +96,11 @@ class HistoryViewModel(
                 }
                 is ApiResult.Error -> state.update {
                     val retained = if (result.error == "identity_changed") PersonalListUiState() else it
-                    retained.copy(isLoading = false, isLoadingMore = false, isRefreshing = false, error = result.message)
+                    retained.copy(isLoading = false, isLoadingMore = false, isRefreshing = false, error = result.text ?: UiText.Raw(result.message))
                 }
                 is ApiResult.NetworkError -> state.update {
                     it.copy(isLoading = false, isLoadingMore = false, isRefreshing = false,
-                        error = result.exception.message ?: "History could not be loaded.")
+                        error = result.exception.message?.let(UiText::Raw) ?: UiText.Key(SharedString.HistoryLoadFailed))
                 }
             }
         }

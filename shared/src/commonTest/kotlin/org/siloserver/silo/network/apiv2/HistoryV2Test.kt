@@ -3,7 +3,10 @@ package org.siloserver.silo.network.apiv2
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.*
+import io.ktor.http.content.TextContent
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.siloserver.silo.network.*
@@ -106,6 +109,32 @@ class HistoryV2Test {
             assertEquals(1, calls)
             changeDuringRead = true
             assertEquals("identity_changed", assertIs<ApiResult.Error>(api.page()).error)
+        } finally { client.close() }
+    }
+
+    @Test fun removeIsOnePostOfItsTargetAnsweredWithNoContent() = runTest {
+        val owner = AuthScopeSnapshot("s", "p", "https://example.invalid", "pin", identityGeneration = 1)
+        val tokens = object : TokenManager by TokenManagerImpl() { override suspend fun snapshotCurrentScope() = owner }
+        var calls = 0
+        val client = HttpClient(MockEngine { request ->
+            calls++
+            assertEquals(HttpMethod.Post, request.method)
+            assertEquals("/api/v2/history/remove", request.url.encodedPath)
+            assertEquals("""{"targets":[{"content_id":"series-1"}]}""", (request.body as TextContent).text)
+            respond("", HttpStatusCode.NoContent)
+        }) { install(ContentNegotiation) { json(SiloJson) } }
+        try {
+            assertIs<ApiResult.Success<Unit>>(HistoryV2Api(client, ApiV2Gate.Unrestricted, tokens).remove("series-1"))
+            assertEquals(1, calls)
+        } finally { client.close() }
+    }
+
+    @Test fun removeWithoutAProfileSendsNothing() = runTest {
+        var calls = 0
+        val client = HttpClient(MockEngine { calls++; respond("", HttpStatusCode.NoContent) })
+        try {
+            assertEquals("identity_changed", assertIs<ApiResult.Error>(HistoryV2Api(client, ApiV2Gate.Unrestricted).remove("series-1")).error)
+            assertEquals(0, calls)
         } finally { client.close() }
     }
 
