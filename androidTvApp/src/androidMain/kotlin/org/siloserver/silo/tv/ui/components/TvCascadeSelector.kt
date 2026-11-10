@@ -402,7 +402,7 @@ fun TvCascadeSelector(
                         .tvSkylinePanelChrome()
                         .padding(CascadePanelPadding),
                 ) {
-                    CascadePanelHeader(type.librariesHeader)
+                    CascadePanelHeader(stringResource(type.librariesHeaderRes))
                     Box {
                     LazyColumn(
                         state = lazyListState,
@@ -445,7 +445,7 @@ fun TvCascadeSelector(
                     // BK: only when more libraries sit below the visible rows.
                     if (lazyListState.canScrollForward) {
                         Text(
-                            text = "↓ more",
+                            text = "↓ more", // i18n-ignore
                             color = SiloOnSurface.copy(alpha = 0.70f),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
@@ -558,7 +558,7 @@ private fun CascadeFlyoutHeader(text: String) {
 private fun CascadePanelFooter(isSingleLibrary: Boolean) {
     CascadePanelFooter(
         caption = if (isSingleLibrary) {
-            "Press opens the section · Menu closes"
+            stringResource(CommonR.string.menu_cascade_hintSingle)
         } else {
             "Press opens · → sections"
         },

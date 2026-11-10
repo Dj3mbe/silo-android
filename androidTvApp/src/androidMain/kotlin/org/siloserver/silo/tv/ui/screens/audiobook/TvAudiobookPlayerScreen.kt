@@ -89,6 +89,11 @@ import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import org.siloserver.silo.common.R as CommonR
+import org.siloserver.silo.common.player.errorText
+import org.siloserver.silo.common.player.skipIntervalErrorText
 import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 private enum class AudiobookPanel { None, Chapters, Speed, Sleep, More, Skip, Bookmarks, About }

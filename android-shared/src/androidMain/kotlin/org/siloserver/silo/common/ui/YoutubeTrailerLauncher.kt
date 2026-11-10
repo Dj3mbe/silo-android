@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.widget.Toast
 import androidx.annotation.ColorInt
+import org.siloserver.silo.common.R
 import org.siloserver.silo.common.player.TvModeDetector
 import org.siloserver.silo.model.catalog.ItemVideo
 

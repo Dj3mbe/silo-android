@@ -1,5 +1,8 @@
 package org.siloserver.silo.android.ui.screens.player
 
+import android.content.res.Resources
+import org.siloserver.silo.common.R as CommonR
+import org.siloserver.silo.common.i18n.LocaleFormat
 import org.siloserver.silo.common.ui.LanguageNames
 import org.siloserver.silo.model.playback.PlayerSubtitleInfo
 import org.siloserver.silo.model.subtitles.SubtitleAiJobKind

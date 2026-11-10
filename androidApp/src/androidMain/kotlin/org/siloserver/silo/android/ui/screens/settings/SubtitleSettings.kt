@@ -108,8 +108,8 @@ fun SubtitleMetadataSection(
         )
     }
     SettingsSection(
-        title = "Metadata",
-        footer = "Fallback language BK prefers for titles, descriptions, and artwork.",
+        title = stringResource(CommonR.string.settings_section_metadata),
+        footer = stringResource(CommonR.string.settingsManifest_catalog_metadata_language_description),
         modifier = modifier,
     ) {
         val metadataValue = LanguageOptions.label(metadataLanguage, SettingKeys.CATALOG_METADATA_LANGUAGE)

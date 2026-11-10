@@ -106,7 +106,7 @@ internal fun rememberLegacyTvVoiceSearch(
                 releaseRecognizer()
                 currentOnStatus(when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
-                        "Didn't hear a title. Try again."
+                        context.getString(CommonR.string.search_voiceNoMatchTv)
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
                         context.getString(CommonR.string.search_voiceNetworkErrorTv)
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
@@ -115,7 +115,7 @@ internal fun rememberLegacyTvVoiceSearch(
                         } else {
                             context.getString(CommonR.string.search_voiceServiceMicDeniedTv)
                         }
-                    else -> "Voice search couldn't start. Try again."
+                    else -> context.getString(CommonR.string.search_voiceStartFailedTv)
                 })
             }
         })
@@ -146,7 +146,7 @@ internal fun rememberLegacyTvVoiceSearch(
         if (granted) {
             if (!startRecognition()) currentOnUnavailable()
         } else {
-            currentOnStatus("Allow microphone access for Silo in Settings to use voice search.")
+            currentOnStatus(context.getString(CommonR.string.search_voiceMicPermissionTv))
         }
     }
     DisposableEffect(lifecycleOwner) {

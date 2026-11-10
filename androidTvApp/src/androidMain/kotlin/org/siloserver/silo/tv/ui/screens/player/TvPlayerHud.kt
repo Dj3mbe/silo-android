@@ -132,8 +132,10 @@ import org.siloserver.silo.tv.ui.focus.TvFocusLog
 import org.siloserver.silo.tv.ui.focus.TvFrameRelocationMaxAttempts
 import org.siloserver.silo.tv.ui.focus.rememberTvContentInitialFocus
 import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
-import org.siloserver.silo.tv.ui.theme.SelectedContent
+import org.siloserver.silo.common.i18n.currentNumberLocale
+import org.siloserver.silo.common.i18n.text
 import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.theme.SelectedContent
 import org.siloserver.silo.tv.ui.theme.SelectedFill
 import org.siloserver.silo.tv.ui.theme.glassSheen
 

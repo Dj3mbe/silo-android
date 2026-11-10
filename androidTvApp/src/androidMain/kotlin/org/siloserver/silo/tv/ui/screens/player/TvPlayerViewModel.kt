@@ -977,8 +977,7 @@ class TvPlayerViewModel(
         private const val TAG = "TvPlayerViewModel"
         private const val LIVE_SUBTITLE_COMPLETED_GRACE_MS = 15_000L
         private const val AI_SUBTITLE_READY_FALLBACK_MS = 5_000L
-        const val SERVER_UNREACHABLE_MESSAGE =
-            "Can't reach server — check your connection."
+        const val SERVER_UNREACHABLE_MESSAGE = TvPlayerErrors.SERVER_UNREACHABLE
         // A transient network blip retries the same route this many times before
         // demoting to a server transcode (resets once playback progresses).
         private const val MAX_TRANSIENT_NETWORK_RETRIES = 1
@@ -7441,7 +7440,7 @@ class TvPlayerViewModel(
                 }
                 is SubtitlesRepository.SubtitleJobOutcome.Failed -> {
                     clearLiveSubtitle(job.id)
-                    val message = outcome.message ?: "Translation failed"
+                    val message = outcome.message ?: TvPlayerErrors.TRANSLATION_FAILED
                     _aiTranslate.update { it.copy(phase = AiJobPhase.Failed(message)) }
                     // The dialog may have been closed while the job ran; a reason
                     // is a full sentence, so it stays up long enough to read on a TV.

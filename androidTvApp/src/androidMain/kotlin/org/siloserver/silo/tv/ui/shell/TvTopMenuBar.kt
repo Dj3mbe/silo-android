@@ -533,7 +533,7 @@ fun TvTopMenuBar(
             TvSiloWordmark(isFocused = focusedButton == TvTopMenuFocus.Search) {
                 TvTopMenuIconButton(
                     icon = Icons.Outlined.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(CommonR.string.topBar_search),
                     isFocused = focusedButton == TvTopMenuFocus.Search,
                     canFocus = canFocusButton(TvTopMenuFocus.Search),
                     focusRequester = searchFocusRequester,
@@ -691,6 +691,11 @@ data class TvAccountState(
     val serverName: String = "",
 )
 
+/** [TvAccountState.displayName], or "Profile" before a profile or user is known. */
+@Composable
+internal fun TvAccountState.shownName(): String =
+    displayName ?: stringResource(CommonR.string.topBar_profileFallback)
+
 /**
  * BK: current time in a capsule that matches the selected tab (same shape,
  * height, fill, border and text color), left of the profile avatar. Display
@@ -764,7 +769,7 @@ private fun TvSiloWordmark(
     ) {
         Image(
             painter = painterResource(id = R.drawable.bk_crown_pill),
-            contentDescription = "BK",
+            contentDescription = stringResource(R.string.bk_app_name),
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxHeight()

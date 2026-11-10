@@ -201,7 +201,7 @@ fun TvMarqueeScreen(
             Row(Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = painterResource(R.drawable.bk_logo_pill),
-                    contentDescription = "BK",
+                    contentDescription = stringResource(R.string.bk_app_name),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.height(32.dp).width(171.dp),
                 )

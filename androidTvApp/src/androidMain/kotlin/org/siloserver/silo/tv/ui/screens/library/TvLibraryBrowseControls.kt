@@ -90,6 +90,8 @@ import org.siloserver.silo.model.catalog.CatalogFiltersResponse
 import org.siloserver.silo.tv.ui.components.tvOutlinedTextFieldColors
 import org.siloserver.silo.tv.ui.components.tvShowImeOnSelect
 import org.siloserver.silo.tv.ui.components.tvSkylinePanelChrome
+import org.siloserver.silo.common.i18n.LocaleFormat
+import org.siloserver.silo.common.i18n.currentNumberLocale
 import org.siloserver.silo.tv.ui.theme.FocusAccent
 
 /**

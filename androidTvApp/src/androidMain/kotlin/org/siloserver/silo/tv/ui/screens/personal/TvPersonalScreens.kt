@@ -43,7 +43,11 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
+import org.siloserver.silo.common.R as CommonR
 import org.koin.core.parameter.parametersOf
 import org.siloserver.silo.tv.ui.components.TvCatalogGrid
 import org.siloserver.silo.tv.ui.components.TvErrorScreen
@@ -66,6 +70,7 @@ import org.siloserver.silo.viewmodel.PersonalListUiState
 import org.siloserver.silo.viewmodel.PersonalListViewModel
 import org.siloserver.silo.viewmodel.WatchlistViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import org.siloserver.silo.common.i18n.text
 import org.siloserver.silo.model.catalog.BrowseItem
 import org.siloserver.silo.network.ApiResult
 
