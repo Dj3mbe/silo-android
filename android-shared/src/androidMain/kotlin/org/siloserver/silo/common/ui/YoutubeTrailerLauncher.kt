@@ -3,8 +3,10 @@ package org.siloserver.silo.common.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.widget.Toast
+import androidx.annotation.ColorInt
 import org.siloserver.silo.common.player.TvModeDetector
 import org.siloserver.silo.model.catalog.ItemVideo
 
@@ -14,9 +16,10 @@ private const val YOUTUBE_TV_PACKAGE = "com.google.android.youtube.tv"
  * Plays a remote trailer in Silo's own player ([YoutubeTrailerActivity]),
  * which needs no YouTube account and so skips YouTube's profile picker. Falls
  * back to [openYoutubeTrailerExternally] when that player can't start.
+ * [spinnerColor] tints the player's loading spinner.
  */
-fun openYoutubeTrailer(context: Context, video: ItemVideo) {
-    if (!YoutubeTrailerActivity.start(context, video.siteKey)) {
+fun openYoutubeTrailer(context: Context, video: ItemVideo, @ColorInt spinnerColor: Int = Color.WHITE) {
+    if (!YoutubeTrailerActivity.start(context, video.siteKey, spinnerColor)) {
         openYoutubeTrailerExternally(context, video.siteKey)
     }
 }

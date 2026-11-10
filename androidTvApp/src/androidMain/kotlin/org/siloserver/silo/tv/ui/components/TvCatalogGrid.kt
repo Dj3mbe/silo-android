@@ -120,6 +120,9 @@ fun TvCatalogGrid(
         tvArtworkAspectRatioForMediaType(item.type)
     },
     onBrowseItemClick: ((BrowseItem) -> Unit)? = null,
+    /** Adds a row labelled [removeItemLabel] to each card's menu that removes it from this list. */
+    onRemoveItem: ((BrowseItem) -> Unit)? = null,
+    removeItemLabel: String = "",
     header: (@Composable () -> Unit)? = null,
     footer: (@Composable () -> Unit)? = null,
     emptyState: (@Composable () -> Unit)? = null,
@@ -343,7 +346,14 @@ fun TvCatalogGrid(
                             )
                         },
                     overlay = OverlayDataExtractor.fromBrowseItem(item).takeIf { boxSet == null },
-                    actions = if (boxSet != null) TvMediaCardActions() else actions,
+                    actions = when {
+                        boxSet != null -> TvMediaCardActions()
+                        onRemoveItem != null -> actions.copy(
+                            onRemoveFromHome = { onRemoveItem(item) },
+                            removeFromHomeLabel = removeItemLabel,
+                        )
+                        else -> actions
+                    },
                 )
             }
         }

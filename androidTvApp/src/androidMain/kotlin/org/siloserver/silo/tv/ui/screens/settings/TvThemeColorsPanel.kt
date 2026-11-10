@@ -251,7 +251,7 @@ private fun ThemePanel(
     }
 }
 
-/** The ready-made looks, each a tile showing its accent and selected colours, then the Glass switch. */
+/** The ready-made looks, each a tile showing its selected and accent colours, then the Glass switch. */
 @Composable
 private fun ThemeLooksRow() {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -329,8 +329,8 @@ private fun ThemeLookTile(look: TvThemeLook, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                LookDot(look.accent.color)
                 LookDot((look.selected ?: look.accent).color)
+                LookDot(look.accent.color)
             }
             Text(
                 text = look.label,
@@ -633,8 +633,8 @@ internal fun ThemeSwatchTile(color: Color, modifier: Modifier = Modifier) {
 }
 
 /**
- * The live part of the Theme Colors Settings row: sample tabs, then the accent
- * and selected colours as two tiles. The tabs sit on their own dark ground so
+ * The live part of the Theme Colors Settings row: sample tabs, then the selected
+ * and accent colours as two tiles in the tabs' order. The tabs sit on their own dark ground so
  * they read the same whether or not the row has focus.
  */
 @Composable
@@ -655,8 +655,8 @@ internal fun TvThemeColorsRowSamples() {
             PreviewTab("Series", PreviewTabState.Idle, compact = true)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            ThemeSwatchTile(FocusAccent)
             ThemeSwatchTile(TvSelected.swatch)
+            ThemeSwatchTile(FocusAccent)
         }
     }
 }

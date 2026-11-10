@@ -66,4 +66,6 @@ class PersonalDataApi(
 
     suspend fun listHistory(continuation: HistoryContinuationV2? = null, limit: Int = 40): ApiResult<HistoryPageV2> =
         historyV2.page(limit = limit, continuation = continuation)
+
+    suspend fun removeFromHistory(contentId: String): ApiResult<Unit> = historyV2.remove(contentId)
 }

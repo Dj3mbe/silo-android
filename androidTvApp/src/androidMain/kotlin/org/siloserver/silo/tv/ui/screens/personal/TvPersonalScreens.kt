@@ -1,5 +1,6 @@
 package org.siloserver.silo.tv.ui.screens.personal
 
+import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,9 +29,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import org.siloserver.silo.tv.ui.focus.rememberTvFlatReturnRestoration
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -38,6 +43,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import kotlinx.coroutines.launch
 import org.koin.core.parameter.parametersOf
 import org.siloserver.silo.tv.ui.components.TvCatalogGrid
 import org.siloserver.silo.tv.ui.components.TvErrorScreen
@@ -60,6 +66,8 @@ import org.siloserver.silo.viewmodel.PersonalListUiState
 import org.siloserver.silo.viewmodel.PersonalListViewModel
 import org.siloserver.silo.viewmodel.WatchlistViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import org.siloserver.silo.model.catalog.BrowseItem
+import org.siloserver.silo.network.ApiResult
 
 /**
  * Favorites / Watchlist / History screens all share the same `6-column grid
@@ -213,6 +221,9 @@ fun TvHistoryScreen(
     viewModel: HistoryViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     PersonalListResumeRefresh(viewModel.uiState, { viewModel.hasLoadedOnce }, viewModel::refresh)
     LaunchedEffect(state.items.isEmpty(), state.hasMore, state.isLoadingMore, state.isLoading, state.error) {
         if (state.items.isEmpty() && state.hasMore && !state.isLoading && !state.isLoadingMore && !state.isRefreshing && state.error == null) {
@@ -230,6 +241,18 @@ fun TvHistoryScreen(
         onLoadMore = viewModel::loadMore,
         onRetry = viewModel::retry,
         onInitialContentFocus = onInitialContentFocus,
+        onRemoveItem = { item ->
+            scope.launch {
+                if (viewModel.remove(item.contentId) is ApiResult.Success) {
+                    // Hand focus to a neighbour before the focused card leaves the grid.
+                    if (!focusManager.moveFocus(FocusDirection.Next)) focusManager.moveFocus(FocusDirection.Previous)
+                    viewModel.onRemoved(item.contentId)
+                } else {
+                    Toast.makeText(context, "Couldn't remove it from History.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        },
+        removeItemLabel = "Remove from History",
     )
 }
 
@@ -315,6 +338,8 @@ private fun PersonalGrid(
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     onInitialContentFocus: () -> Unit,
+    onRemoveItem: ((BrowseItem) -> Unit)? = null,
+    removeItemLabel: String = "",
 ) {
     val startPadding = tvPageStartPadding()
     val gridState = rememberLazyGridState()
@@ -439,6 +464,8 @@ private fun PersonalGrid(
                     restoreItemIndex = restoration.requesterItemIndex,
                     restoreItemFocusRequester = restoreItemFocusRequester,
                     onRestoreRequesterAttached = restoration::onRequesterAttached,
+                    onRemoveItem = onRemoveItem,
+                    removeItemLabel = removeItemLabel,
                     onItemFocusedAtIndex = { item, index, focused ->
                         if (focused) {
                             restoration.onItemFocused(item.contentId, index)

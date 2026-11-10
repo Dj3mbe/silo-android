@@ -25,7 +25,7 @@ object TvThemeLooks {
     val all: List<TvThemeLook> = listOf(
         TvThemeLook("Gold", AccentPreset.Gold),
         TvThemeLook("Fire", AccentPreset.FireRed),
-        TvThemeLook("Gold & Grey", AccentPreset.Gold, AccentPreset.Graphite),
+        TvThemeLook("Grey & Gold", AccentPreset.Gold, AccentPreset.Graphite),
         TvThemeLook("Ocean", AccentPreset.Ocean),
         TvThemeLook("Mint", AccentPreset.Mint),
         TvThemeLook("Violet", AccentPreset.Purple),

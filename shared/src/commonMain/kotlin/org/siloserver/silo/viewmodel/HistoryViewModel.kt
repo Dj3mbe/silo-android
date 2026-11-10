@@ -50,6 +50,13 @@ class HistoryViewModel(
         load(reset = true)
     }
 
+    /** Asks the server to hide [contentId]; the caller drops it with [onRemoved] once it succeeds. */
+    suspend fun remove(contentId: String): ApiResult<Unit> = repository.removeFromHistory(contentId)
+
+    fun onRemoved(contentId: String) = state.update {
+        it.copy(items = it.items.filterNot { item -> item.contentId == contentId }, historyWatches = it.historyWatches - contentId)
+    }
+
     fun retry() = load(reset = true)
     fun refresh() = load(reset = true, refreshing = true)
     fun loadMore() {
