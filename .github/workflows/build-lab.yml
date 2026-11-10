@@ -46,7 +46,7 @@ jobs:
       - name: Turn the code into BK Lab (app id, name, updater) at build time only
         run: |
           sed -i 's/applicationId = "com.bingekings.app"/applicationId = "com.bingekings.lab"/' androidApp/build.gradle.kts androidTvApp/build.gradle.kts
-          sed -i 's#<string name="app_name">BK</string>#<string name="app_name">BK Lab</string>#' androidApp/src/androidMain/res/values/strings.xml androidTvApp/src/androidMain/res/values/strings.xml
+          sed -i 's#>BK</string>#>BK Lab</string>#' androidApp/src/androidMain/res/values/strings.xml androidTvApp/src/androidMain/res/values/strings.xml
           U=android-shared/src/androidMain/kotlin/org/siloserver/silo/common/ui/BkUpdater.kt
           sed -i 's#releases/latest/download/#releases/download/lab-latest/#; s#/releases/latest")#/releases/tags/lab-latest")#' "$U"
           grep -q 'com.bingekings.lab' androidApp/build.gradle.kts
