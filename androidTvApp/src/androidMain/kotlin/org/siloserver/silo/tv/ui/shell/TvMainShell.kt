@@ -116,6 +116,7 @@ import org.siloserver.silo.common.diagnostics.DiagnosticsFocusLogger
 import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.common.ui.components.ProfileAvatarRef
 import org.siloserver.silo.tv.ui.theme.FocusAccent
+import org.siloserver.silo.tv.ui.screens.player.TvPlayerChrome
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.DarkBackground
 import org.siloserver.silo.common.network.ServerReachabilityMonitor
