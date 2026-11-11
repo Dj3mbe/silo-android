@@ -60,17 +60,20 @@ jobs:
             exit 0
           fi
 
-          if ! git merge "$TARGET" -X ours -m "chore: merge upstream main"; then
-            # Conflicts -X ours cannot settle (a file one side deleted): keep the fork's side.
-            git ls-files -u | cut -f2 | sort -u | while IFS= read -r path; do
-              if git ls-files -u -- "$path" | grep -q '^[0-9]* [0-9a-f]* 2'; then
-                git checkout --ours -- "$path"
-                git add -- "$path"
-              else
-                git rm -q --cached -- "$path"
-              fi
-            done
-            git commit -m "chore: merge upstream main (kept fork changes on conflicts)"
+          SUBJECT="chore: merge upstream main"
+          if [ "$KEEP_OURS" = "true" ]; then
+            SUBJECT="$SUBJECT (BK side kept on clashes)"
+          fi
+          if ! git merge "$TARGET" -X ours -m "$SUBJECT"; then
+            # A conflict -X ours cannot settle (a file one side deleted) is never
+            # resolved silently: abort and ask for a hand merge.
+            git merge --abort
+            MSG="Upstream sync paused: a conflict could not be settled automatically, so custom needs a hand merge."
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            if [ -n "$HOOK" ]; then
+              curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
+            fi
+            exit 0
           fi
 
           # BK replaces Silo's TV logo and setup mark with PNGs of the same names. Upstream
