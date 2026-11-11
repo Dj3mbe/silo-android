@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: custom
+          fetch-depth: 0 # the hold check reads the last merge commit
       - name: Work out build tag and version, skip if already released
         id: chk
         run: |
