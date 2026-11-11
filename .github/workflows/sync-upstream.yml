@@ -1,8 +1,21 @@
 name: Sync upstream
+# Mirrors Silo's main branch into this fork's main, then merges it into custom.
+# When both sides changed the same lines the merge is not made: the files are
+# posted to Discord and custom waits for a hand merge. That merge is then
+# recorded by running this by hand with "keep BK's side" ticked and applying the
+# prepared repair zip straight after.
 on:
   schedule:
     - cron: "0 8 * * *"
   workflow_dispatch:
+    inputs:
+      keep_ours:
+        description: "Merge even where files clash, keeping BK's side (only with a repair zip ready)"
+        type: boolean
+        default: false
+      upstream_commit:
+        description: "Silo commit to merge (blank for the newest)"
+        default: ""
 
 permissions:
   contents: write
@@ -22,31 +35,45 @@ jobs:
       - name: Merge upstream into custom
         env:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          KEEP_OURS: ${{ inputs.keep_ours }}
+          UPSTREAM_COMMIT: ${{ inputs.upstream_commit }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add upstream https://github.com/Silo-Server/silo-android.git
           git fetch upstream main
           git push origin refs/remotes/upstream/main:refs/heads/main
+          TARGET=${UPSTREAM_COMMIT:-upstream/main}
 
-          # A trial merge lists the files where both sides changed the same lines. The real
-          # merge below keeps the fork's version there, so upstream's change needs a look.
-          git merge --no-commit --no-ff upstream/main >/dev/null 2>&1 || true
+          # A trial merge lists the files where both sides changed the same lines.
+          git merge --no-commit --no-ff "$TARGET" >/dev/null 2>&1 || true
           git diff --name-only --diff-filter=U > "$RUNNER_TEMP/clashes"
           git merge --abort 2>/dev/null || true
 
-          # Where upstream and this fork change the same lines, keep the fork's version.
-          if ! git merge upstream/main -X ours -m "chore: merge upstream main"; then
-            # Conflicts -X ours cannot settle (a file one side deleted): keep the fork's side.
-            git ls-files -u | cut -f2 | sort -u | while IFS= read -r path; do
-              if git ls-files -u -- "$path" | grep -q '^[0-9]* [0-9a-f]* 2'; then
-                git checkout --ours -- "$path"
-                git add -- "$path"
-              else
-                git rm -q --cached -- "$path"
-              fi
-            done
-            git commit -m "chore: merge upstream main (kept fork changes on conflicts)"
+          if [ -s "$RUNNER_TEMP/clashes" ] && [ "$KEEP_OURS" != "true" ]; then
+            MSG=$(printf "Upstream sync paused: Silo and BK changed the same lines in %s files, so custom needs a hand merge.\n%s" \
+              "$(wc -l < "$RUNNER_TEMP/clashes")" "$(head -n 20 "$RUNNER_TEMP/clashes")")
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            if [ -n "$HOOK" ]; then
+              curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
+            fi
+            exit 0
+          fi
+
+          SUBJECT="chore: merge upstream main"
+          if [ "$KEEP_OURS" = "true" ]; then
+            SUBJECT="$SUBJECT (BK side kept on clashes)"
+          fi
+          if ! git merge "$TARGET" -X ours -m "$SUBJECT"; then
+            # A conflict -X ours cannot settle (a file one side deleted) is never
+            # resolved silently: abort and ask for a hand merge.
+            git merge --abort
+            MSG="Upstream sync paused: a conflict could not be settled automatically, so custom needs a hand merge."
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            if [ -n "$HOOK" ]; then
+              curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
+            fi
+            exit 0
           fi
 
           # BK replaces Silo's TV logo and setup mark with PNGs of the same names. Upstream
@@ -62,12 +89,3 @@ jobs:
             git commit -m "chore: keep BK's TV logo and setup mark over the upstream vectors"
           fi
           git push origin custom
-
-          if [ -s "$RUNNER_TEMP/clashes" ]; then
-            { echo "Kept BK's version where upstream changed the same lines:"; sed 's/^/- /' "$RUNNER_TEMP/clashes"; } >> "$GITHUB_STEP_SUMMARY"
-            if [ -n "$HOOK" ]; then
-              MSG=$(printf "Upstream sync kept BK's version where Silo changed the same lines (%s files):\n%s" \
-                "$(wc -l < "$RUNNER_TEMP/clashes")" "$(head -n 20 "$RUNNER_TEMP/clashes")")
-              curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
-            fi
-          fi

@@ -2093,8 +2093,8 @@ private fun HeroActionRow(
                     icon = Icons.Filled.MoreHoriz,
                     iconActive = Icons.Filled.MoreHoriz,
                     isActive = false,
-                    contentDescription = "More options",
-                    titleOnFocus = "More",
+                    contentDescription = stringResource(CommonR.string.detail_moreOptions),
+                    titleOnFocus = stringResource(CommonR.string.detail_more),
                     onClick = {
                         moreOpenedByHold = false
                         moreOpen = true

@@ -533,7 +533,7 @@ fun TvTopMenuBar(
             TvSiloWordmark(isFocused = focusedButton == TvTopMenuFocus.Search) {
                 TvTopMenuIconButton(
                     icon = Icons.Outlined.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(CommonR.string.topBar_search),
                     isFocused = focusedButton == TvTopMenuFocus.Search,
                     canFocus = canFocusButton(TvTopMenuFocus.Search),
                     focusRequester = searchFocusRequester,
@@ -685,11 +685,16 @@ data class TvAccountState(
     val displayName: String? = null,
     /** Avatar ref + server-resolved URL, kept together so neither is lost. */
     val avatar: ProfileAvatarRef = ProfileAvatarRef.None,
-    /** Secondary line under the name in the dropdown header (role / username); null shows none. */
+    /** Shown after the server's name in the dropdown header (role / username); null shows none. */
     val subtitle: UiText? = null,
-    /** Active server display name, shown in the dropdown header. */
+    /** Active server display name, first on the line under the name in the dropdown header. */
     val serverName: String = "",
 )
+
+/** [TvAccountState.displayName], or "Profile" before a profile or user is known. */
+@Composable
+internal fun TvAccountState.shownName(): String =
+    displayName ?: stringResource(CommonR.string.topBar_profileFallback)
 
 /**
  * BK: current time in a capsule that matches the selected tab (same shape,
@@ -764,7 +769,7 @@ private fun TvSiloWordmark(
     ) {
         Image(
             painter = painterResource(id = R.drawable.bk_crown_pill),
-            contentDescription = "BK",
+            contentDescription = stringResource(R.string.bk_app_name),
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxHeight()

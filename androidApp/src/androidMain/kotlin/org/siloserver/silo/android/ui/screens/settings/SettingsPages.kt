@@ -413,7 +413,7 @@ fun SettingsNotificationsScreen(viewModel: SettingsViewModel, onBackClick: () ->
         item(key = "in-app") {
             SettingsSection(
                 title = null,
-                footer = "Show alerts inside BK as new releases arrive.",
+                footer = stringResource(CommonR.string.settings_notifications_inAppFooter),
             ) {
                 SettingsSwitchRow(
                     label = stringResource(CommonR.string.settings_notifications_inApp),
@@ -468,7 +468,7 @@ fun SettingsProfileSelectionScreen(onBackClick: () -> Unit) {
         item(key = "profile-selection") {
             SettingsSection(
                 title = null,
-                footer = "Choose when BK asks who's watching. This applies only to this device.",
+                footer = stringResource(CommonR.string.settings_profileSelection_footer),
             ) {
                 ProfileLaunchBehavior.entries.forEach { behavior ->
                     SettingsChoiceRow(

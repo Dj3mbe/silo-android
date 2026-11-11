@@ -1,5 +1,6 @@
 package org.siloserver.silo.android.ui.screens.search
 
+import androidx.compose.material.icons.filled.Search
 import org.siloserver.silo.common.i18n.text
 import org.siloserver.silo.model.catalog.CatalogBoxSet
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -239,7 +239,7 @@ fun SearchScreen(
                 }
                 !state.hasSearched && state.query.isBlank() -> {
                     SearchEmptyState(
-                        text = "Search BK",
+                        text = stringResource(CommonR.string.search_initial),
                         subtitle = if (voiceAvailable) {
                             stringResource(CommonR.string.search_initialBodyVoice)
                         } else {

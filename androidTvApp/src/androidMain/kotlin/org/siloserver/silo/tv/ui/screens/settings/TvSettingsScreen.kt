@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.focus.focusProperties
@@ -25,7 +26,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -710,7 +710,7 @@ private fun SettingsRail(
             onFocused = { railActionHasFocus = true },
         )
         Text(
-            text = "BingeKings ${clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)}",
+            text = "BingeKings ${clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)}", // i18n-ignore
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 12.dp, top = 6.dp),
@@ -1420,14 +1420,10 @@ private fun TvPlaybackSettingsPane(
                 // for Force HDR Passthrough. The True Black Bars sentence is
                 // Android TV's own.
                 SettingsFooterText(
-                    text = QualityChoices.description(state.qualityResolution, state.maxBitrateKbps) +
-                        " Force HDR Passthrough allows HDR playback when this TV doesn't report " +
-                        "support. It does not force the HDMI output into HDR; Android may still convert " +
-                        "the picture to SDR. Enable it only if you've confirmed your TV supports the " +
-                        "source format. Unsupported formats may produce a black screen or incorrect colors." +
-                        " True Black Bars stops BK from drawing the bars around the picture during " +
-                        "playback. Try it if they look grey in HDR or Dolby Vision, and turn it off again " +
-                        "if they get lighter or show a thin line.",
+                    text = stringResource(
+                        CommonR.string.settings_streaming_footer,
+                        QualityChoices.description(state.qualityResolution, state.maxBitrateKbps).text(),
+                    ),
                 )
             }
         }
@@ -1497,9 +1493,7 @@ private fun TvPlaybackSettingsPane(
                     focusRequester = seekFallbackFocus,
                 )
                 SettingsFooterText(
-                    text = "Rewind on Resume skips back when you return to a partly watched title. Still " +
-                        "Watching Prompt sets how many episodes play in a row before BK asks whether " +
-                        "you're still watching.",
+                    text = stringResource(CommonR.string.settings_episodes_footer),
                 )
             }
         }
@@ -2012,7 +2006,7 @@ private fun TvSubtitleSettingsPane(
                         onClick = { activePicker = SubtitlePicker.MetadataLanguage },
                     )
                     SettingsFooterText(
-                        text = "Fallback language BK prefers for titles, descriptions, and artwork.",
+                        text = stringResource(CommonR.string.settingsManifest_catalog_metadata_language_description),
                     )
                 }
             }

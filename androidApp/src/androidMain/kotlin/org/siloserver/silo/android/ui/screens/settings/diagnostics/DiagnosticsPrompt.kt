@@ -37,15 +37,11 @@ fun DiagnosticsPromptDialog(
     }
     val reportDescription = diagnosticsReportsReadyText(prompt)
     SiloDialog(
-        title = "BK encountered a problem",
+        title = stringResource(CommonR.string.diagnostics_prompt_title),
         message = if (allowAlwaysSend) {
             reportDescription
         } else {
-            "$reportDescription\n\nThe report includes the BK app version and build, Android version, " +
-                "device model, crash details, and diagnostic logs. Its pseudonymous credential is not " +
-                "linked to an account on your self-hosted server. Username, email, profile, server " +
-                "address, and playback session IDs are omitted. It never sends automatically and may " +
-                "be retained for up to 30 days."
+            reportDescription + "\n\n" + stringResource(CommonR.string.diagnostics_prompt_privacyNotice)
         },
         onDismissRequest = onDontSend,
         actions = run {

@@ -7,6 +7,8 @@ import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import org.siloserver.silo.common.i18n.SharedString
+import org.siloserver.silo.common.i18n.UiText
 import org.siloserver.silo.network.*
 
 /** One server history page per request; empty pages can still have continuation. */
@@ -61,5 +63,6 @@ class HistoryV2Api(
         }) { }
     }
 
-    private fun invalidCursor(message: String) = ApiResult.Error(0, "invalid_cursor", message)
+    private fun invalidCursor(message: String, text: SharedString? = null) =
+        ApiResult.Error(0, "invalid_cursor", message, text = text?.let { UiText.Key(it) })
 }

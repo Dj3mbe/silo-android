@@ -421,7 +421,7 @@ private fun AddressEntry(
             state.discoveryError?.let { TvMarqueeErrorText(it.text(), Modifier.width(380.dp).padding(top = 8.dp)) }
         },
         card = {
-            TvUsePhoneCard("Open BK on a phone or tablet on the same Wi‑Fi and tap Set up. It finishes this for you.")
+            TvUsePhoneCard(stringResource(CommonR.string.tvSignIn_server_phoneCard))
         },
     )
 }

@@ -292,6 +292,8 @@ fun TvSearchScreen(
     // A spoken query is a submitted query, including the focus handoff:
     // nobody dictates a title in order to be left sitting on the search field.
     var voiceUnavailable by remember { mutableStateOf(false) }
+    // What the Android 11 recogniser reports: nothing heard, or no microphone access.
+    var voiceStatus by remember { mutableStateOf<String?>(null) }
     val voiceSearch = rememberTvVoiceSearch(
         prompt = stringResource(CommonR.string.search_voicePromptTv),
         onResult = { spoken ->
@@ -305,7 +307,7 @@ fun TvSearchScreen(
         onUnavailable = {
             voiceUnavailable = true
         },
-        onStatus = { voiceUnavailableMessage = it },
+        onStatus = { voiceStatus = it },
     )
 
     LaunchedEffect(requestsEnabled, state.query, requestMediaType) {
@@ -724,7 +726,7 @@ fun TvSearchScreen(
                         setFocusedRegion(TvSearchFocusRegion.Chips, focused)
                     },
                     onQueryChanged = { text ->
-                        voiceUnavailableMessage = null
+                        voiceStatus = null
                         viewModel.onQueryChanged(text)
                     },
                     onClearQuery = {
@@ -748,7 +750,7 @@ fun TvSearchScreen(
                     voiceUnavailableMessage = if (voiceUnavailable) {
                         stringResource(CommonR.string.search_voiceUnavailableTv)
                     } else {
-                        null
+                        voiceStatus
                     },
                     isKeyboardOpen = isKeyboardOpen,
                     onKeyboardOpenChanged = setKeyboardOpen,
@@ -1101,7 +1103,7 @@ private fun SearchStage(
                 singleLine = true,
                 placeholder = {
                     Text(
-                        text = if (voiceSearch.listening) "Listening…" else searchFieldPrompt(mediaTypes),
+                        text = if (voiceSearch.listening) "Listening…" else stringResource(searchFieldPrompt(mediaTypes)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.56f),
                     )
@@ -1390,16 +1392,18 @@ private fun SearchFeedbackMessage(
 /** The media types the search covers, as one whole message per combination the chips allow. */
 private enum class TvSearchScope { Library, Video, Audiobooks, VideoAndAudiobooks }
 
-private fun availableMediaNames(mediaTypes: List<TvSearchMediaType>): String {
-    val names = mediaTypes
-        .filterNot { it == TvSearchMediaType.All }
-        .map { it.label.lowercase() }
-
-    return when (names.size) {
-        0 -> "your library"
-        1 -> names.single()
-        2 -> names.joinToString(" and ")
-        else -> names.dropLast(1).joinToString(", ") + ", and ${names.last()}"
+/**
+ * Video search always offers Movies and Series together (both need a video
+ * library), so the scope is decided by video and audiobooks alone.
+ */
+private fun searchScope(mediaTypes: List<TvSearchMediaType>): TvSearchScope {
+    val video = TvSearchMediaType.Movies in mediaTypes || TvSearchMediaType.Series in mediaTypes
+    val audiobooks = TvSearchMediaType.Audiobooks in mediaTypes
+    return when {
+        video && audiobooks -> TvSearchScope.VideoAndAudiobooks
+        video -> TvSearchScope.Video
+        audiobooks -> TvSearchScope.Audiobooks
+        else -> TvSearchScope.Library
     }
 }
 

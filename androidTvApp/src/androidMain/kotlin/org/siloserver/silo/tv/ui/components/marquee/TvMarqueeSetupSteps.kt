@@ -47,9 +47,9 @@ import org.siloserver.silo.tv.R
 @Composable
 fun TvMarqueeSetupSteps(modifier: Modifier = Modifier) {
     Column(modifier.width(350.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-        Step(1, "Open BK on your phone") { AppIconPicture() }
-        Step(2, "Tap Set up") { SetupCardPicture() }
-        Step(3, "Finish on your phone") { DonePicture() }
+        Step(1, stringResource(CommonR.string.setup_step_open)) { AppIconPicture() }
+        Step(2, stringResource(CommonR.string.shell_phoneSetup_tapSetUp)) { SetupCardPicture() }
+        Step(3, stringResource(CommonR.string.setup_step_finish)) { DonePicture() }
     }
 }
 

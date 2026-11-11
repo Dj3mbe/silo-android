@@ -317,9 +317,8 @@ fun PlaybackEpisodesSection(
     fun overridden(key: String) = PlaybackSettingsKeys.hasDeviceOverride(deviceOverrides, key)
     val introSkipOptions = IntroSkipMode.entries.map { it to stringResource(introSkipModeLabel(it)) }
     SettingsSection(
-        title = "Episodes",
-        footer = "Rewind on Resume skips back when you return to a partly watched title. Still Watching " +
-            "Prompt sets how many episodes play in a row before BK asks whether you're still watching.",
+        title = stringResource(CommonR.string.settings_section_episodes),
+        footer = stringResource(CommonR.string.settings_episodes_footer),
         modifier = modifier,
     ) {
         ProfileLayeredSwitchRow(

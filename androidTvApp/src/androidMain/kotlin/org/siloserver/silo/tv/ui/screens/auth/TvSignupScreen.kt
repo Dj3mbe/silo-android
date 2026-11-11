@@ -143,7 +143,7 @@ fun TvSignupScreen(
                 }
             },
             card = {
-                TvUsePhoneCard("Already have an account? Open BK on a phone or tablet on the same Wi‑Fi and it can sign this TV in for you.")
+                TvUsePhoneCard(stringResource(CommonR.string.tvSignIn_signup_phoneCard))
             },
         )
     }

@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: custom
+          fetch-depth: 0 # the hold check reads the last merge commit
       - name: Work out build tag and version, skip if already released
         id: chk
         run: |
@@ -44,6 +45,15 @@ jobs:
           # deliberately not tied to Silo's version so updates never go backwards.
           echo "code=$((110001000 + BUILD))" >> $GITHUB_OUTPUT
           echo "Silo $VER build $SILO_BUILD; BK build $BUILD"
+          # A sync that kept BK's side on clashing lines is held back: it stays a
+          # prerelease so the in-app updater (which follows the latest release)
+          # does not offer it until someone has tested it.
+          if git log -1 --merges --format=%B | grep -q "BK side kept on clashes"; then
+            echo "hold=true" >> $GITHUB_OUTPUT
+            echo "Held: the newest commit kept BK's side on clashing lines."
+          else
+            echo "hold=false" >> $GITHUB_OUTPUT
+          fi
           if [ "${{ github.event_name }}" = "workflow_run" ] && gh release view "build-$SHA" >/dev/null 2>&1; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Nothing new since build-$SHA, skipping."
@@ -92,12 +102,13 @@ jobs:
           N=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].name' | grep -c "^BK $DAY v" || true)
           LABEL="BK $DAY v$((N + 1))"
           echo "label=$LABEL" >> $GITHUB_OUTPUT
+          if [ "${{ steps.chk.outputs.hold }}" = "true" ]; then RELEASE_KIND=--prerelease; else RELEASE_KIND=--latest; fi
           gh release create "$TAG" out/BK-phone.apk out/BK-tv.apk \
             --title "$LABEL" \
             --notes "$LABEL: automatic $VARIANT build of the custom branch at ${{ steps.chk.outputs.sha }} (build ${{ steps.chk.outputs.build }}; Silo ${{ steps.chk.outputs.ver }} build ${{ steps.chk.outputs.silobuild }}; code ${{ steps.chk.outputs.code }})." \
-            --target custom --latest
+            --target custom "$RELEASE_KIND"
       - name: Post to Discord
-        if: steps.chk.outputs.skip != 'true'
+        if: steps.chk.outputs.skip != 'true' && steps.chk.outputs.hold != 'true'
         env:
           HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
           LABEL: ${{ steps.pub.outputs.label }}

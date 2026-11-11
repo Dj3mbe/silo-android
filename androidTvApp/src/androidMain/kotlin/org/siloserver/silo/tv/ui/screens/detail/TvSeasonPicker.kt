@@ -63,6 +63,9 @@ import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.SelectedFill
 import org.siloserver.silo.tv.ui.theme.SelectedStroke
 import org.siloserver.silo.tv.ui.theme.TvControlCorner
+import android.content.res.Resources
+import androidx.compose.ui.res.stringResource
+import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.tv.ui.theme.glassSheen
 
 /**

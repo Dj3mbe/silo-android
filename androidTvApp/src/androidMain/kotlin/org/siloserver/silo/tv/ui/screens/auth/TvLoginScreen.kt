@@ -1009,7 +1009,7 @@ private fun PasswordScreen(
         card = {
             TvUsePhoneCard(
                 if (passwordOnly) {
-                    "Signed in to BK on your phone? Open it on the same Wi‑Fi and it can sign this TV in for you."
+                    stringResource(CommonR.string.tvSignIn_form_phoneCardPasswordOnly)
                 } else {
                     stringResource(CommonR.string.tvSignIn_form_phoneCard)
                 },

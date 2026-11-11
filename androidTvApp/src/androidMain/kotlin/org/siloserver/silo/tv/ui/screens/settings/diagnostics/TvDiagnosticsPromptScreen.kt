@@ -105,18 +105,14 @@ fun TvDiagnosticsPromptScreen(
                         )
                     } else {
                         Text(
-                            "BK encountered a problem",
+                            stringResource(CommonR.string.diagnostics_prompt_title),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(diagnosticsReportsReadyText(prompt))
                         if (!allowAlwaysSend) {
                             Text(
-                                "The report includes the BK app version and build, Android version, device " +
-                                    "model, crash details, and diagnostic logs. Its pseudonymous credential is " +
-                                    "not linked to an account on your self-hosted server. Username, email, " +
-                                    "profile, server address, and playback session IDs are omitted. It never " +
-                                    "sends automatically and may be retained for up to 30 days.",
+                                stringResource(CommonR.string.diagnostics_prompt_privacyNotice),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }

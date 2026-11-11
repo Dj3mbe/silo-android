@@ -210,7 +210,7 @@ private fun ThemePanel(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Theme Colors",
+                    text = "Theme Colors", // i18n-ignore
                     style = MaterialTheme.typography.displaySmall.copy(fontSize = 21.sp, lineHeight = 25.sp),
                     color = Color.White,
                 )
@@ -289,7 +289,7 @@ private fun ThemeGlassTile(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
         ) {
             Text(
-                text = "Glass",
+                text = "Glass", // i18n-ignore
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
                 color = foreground,
                 maxLines = 1,
@@ -600,7 +600,7 @@ private fun ThemePreview() {
             PreviewSeasonChip("Season 2", selected = false)
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Loading spinner",
+                text = "Loading spinner", // i18n-ignore
                 fontSize = 14.sp,
                 lineHeight = 18.sp,
                 color = Color.White.copy(alpha = 0.55f),
