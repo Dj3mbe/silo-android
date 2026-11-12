@@ -3,6 +3,8 @@ name: Sync lab with custom
 # bk-upload-*.zip files (its TEST BUILD images, unpacked by Build Lab APKs at
 # build time); every other file ends up identical to custom.
 on:
+  push:
+    branches: [custom]
   workflow_dispatch:
 permissions:
   contents: write
