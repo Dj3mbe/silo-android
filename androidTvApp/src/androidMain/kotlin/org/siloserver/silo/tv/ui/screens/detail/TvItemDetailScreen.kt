@@ -1036,6 +1036,7 @@ private fun TvDetailContent(
                                     libraryId = libraryId,
                                     onWatchParty = onWatchParty,
                                     moreActionsRequest = moreActionsRequest,
+                                    onMoreActionsConsumed = { moreActionsRequest = 0 },
                                     // Season mode marks the selected season;
                                     // Show mode offers only the whole series.
                                     watchedSeason = state.seasons
@@ -1796,6 +1797,7 @@ private fun HeroActionRow(
     shuffleSeason: org.siloserver.silo.model.catalog.Season? = null,
     onShuffleSeason: (org.siloserver.silo.model.catalog.Season) -> Unit = {},
     moreActionsRequest: Int = 0,
+    onMoreActionsConsumed: () -> Unit = {},
 ) {
     val resources = localizedResources()
     val watchPartyEntry = rememberTvWatchPartyDetailEntry()
@@ -1807,6 +1809,7 @@ private fun HeroActionRow(
         if (moreActionsRequest > 0) {
             moreOpenedByHold = true
             moreOpen = true
+            onMoreActionsConsumed()
         }
     }
     var playLaunchPending by remember(detail.contentId) { mutableStateOf(false) }
