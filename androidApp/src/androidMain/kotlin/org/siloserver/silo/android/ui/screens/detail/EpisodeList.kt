@@ -32,7 +32,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +60,7 @@ import org.siloserver.silo.android.ui.util.playbackResumePosition
 import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.common.cards.LocalEpisodeSpoilerPrefs
 import org.siloserver.silo.common.i18n.currentFormatLocale
+import org.siloserver.silo.common.overlays.wideCardOverlayScale
 import org.siloserver.silo.common.ui.components.SpoilerImage
 import org.siloserver.silo.common.ui.components.DefaultArtworkKind
 import org.siloserver.silo.common.ui.components.ThumbhashImage
@@ -71,6 +71,7 @@ import org.siloserver.silo.model.settings.EpisodeSpoilers
 import kotlin.math.abs
 import org.siloserver.silo.common.i18n.LocaleFormat
 import org.siloserver.silo.common.i18n.text
+import org.siloserver.silo.common.ui.components.WatchProgressBar
 
 /**
  * PR #212's phone episode carousel: a 240dp card settles in the centre and,
@@ -227,6 +228,8 @@ private fun EpisodeRailCard(
             )
 
             if (episode.userData?.played == true) {
+                // At the wide cards' overlay scale, like their badges.
+                val checkScale = wideCardOverlayScale()
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -235,8 +238,8 @@ private fun EpisodeRailCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(22.dp)
+                        .padding(8.dp * checkScale)
+                        .size(22.dp * checkScale)
                         .clip(CircleShape)
                         .background(Color.White),
                     contentAlignment = Alignment.Center,
@@ -245,7 +248,7 @@ private fun EpisodeRailCard(
                         imageVector = Icons.Filled.Check,
                         contentDescription = stringResource(CommonR.string.detail_watched),
                         tint = Color.Black,
-                        modifier = Modifier.size(12.dp),
+                        modifier = Modifier.size(12.dp * checkScale),
                     )
                 }
             }
@@ -273,17 +276,7 @@ private fun EpisodeRailCard(
                 }
             }
 
-            progress?.takeIf { it > 0f }?.let {
-                LinearProgressIndicator(
-                    progress = { it },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(3.dp),
-                    color = Color.White,
-                    trackColor = Color.Black.copy(alpha = 0.60f),
-                )
-            }
+            if (progress != null) WatchProgressBar(progress)
         }
 
         // The iOS card's caption: NOW VIEWING, "S01E02 · Title", air date and
