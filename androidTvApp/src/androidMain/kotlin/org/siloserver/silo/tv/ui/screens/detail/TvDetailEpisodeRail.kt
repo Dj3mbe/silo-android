@@ -72,6 +72,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import org.siloserver.silo.common.cards.LocalEpisodeSpoilerPrefs
 import org.siloserver.silo.common.i18n.currentFormatLocale
+import org.siloserver.silo.common.overlays.wideCardOverlayScale
 import org.siloserver.silo.common.ui.components.SpoilerImage
 import org.siloserver.silo.common.ui.components.DefaultArtworkKind
 import org.siloserver.silo.common.ui.components.ThumbhashImage
@@ -89,7 +90,6 @@ import org.siloserver.silo.tv.ui.theme.tvRailPinOnFocus
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.theme.SiloSecondaryText
 import org.siloserver.silo.tv.ui.theme.DarkSurfaceElevated
-import org.siloserver.silo.tv.ui.theme.ProgressFill
 import org.siloserver.silo.tv.ui.theme.InterFamily
 import org.siloserver.silo.tv.ui.theme.CardOutline
 import org.siloserver.silo.tv.ui.theme.cardFocusedScale
@@ -101,6 +101,8 @@ import org.siloserver.silo.common.i18n.localizedResources
 import androidx.compose.ui.platform.LocalConfiguration
 import java.util.Locale
 import org.siloserver.silo.common.i18n.isRightToLeftText
+import org.siloserver.silo.common.ui.components.WatchProgressBar
+import org.siloserver.silo.common.ui.components.WatchProgressBarDefaults
 
 /** Includes the still, the two-line caption, and vertical rail padding from the first frame. */
 @Composable
@@ -532,6 +534,8 @@ private fun TvDetailEpisodeCard(
             )
 
             if (episode.userData?.played == true) {
+                // At the wide cards' overlay scale, like their badges.
+                val checkScale = wideCardOverlayScale()
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -539,8 +543,8 @@ private fun TvDetailEpisodeCard(
                 )
                 Box(
                     modifier = Modifier
-                        .padding(6.dp)
-                        .size(20.dp)
+                        .padding(6.dp * checkScale)
+                        .size(20.dp * checkScale)
                         .clip(CircleShape)
                         .background(Color.White)
                         .align(Alignment.TopEnd),
@@ -550,26 +554,13 @@ private fun TvDetailEpisodeCard(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = Color.Black,
-                        modifier = Modifier.size(9.dp),
+                        modifier = Modifier.size(9.dp * checkScale),
                     )
                 }
             }
 
             episode.progressFraction()?.let { fraction ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .align(Alignment.BottomStart)
-                        .background(Color.Black.copy(alpha = 0.6f)),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction)
-                            .height(5.dp)
-                            .background(ProgressFill),
-                    )
-                }
+                WatchProgressBar(fraction, height = WatchProgressBarDefaults.TvHeight)
             }
         }
 
