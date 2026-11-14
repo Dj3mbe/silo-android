@@ -204,6 +204,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -1953,7 +1954,30 @@ class TvPlayerViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TvHudSubtitleSync())
     // The card that follows a sync this viewer started.
     private val subtitleSyncFeedback = SubtitleSyncFeedbackTracker(viewModelScope)
-    val subtitleSyncNotice: StateFlow<SubtitleSyncNotice?> = subtitleSyncFeedback.notice
+    // A "syncing" card shows for a few seconds, once per sync: progress updates
+    // neither restart the clock nor bring it back. The sync keeps running, and
+    // its result card still shows when it finishes.
+    private val subtitleSyncProgressVisibleMs = 4_000L
+    private val subtitleSyncProgressHidden = MutableStateFlow<Set<String>>(emptySet())
+    val subtitleSyncNotice: StateFlow<SubtitleSyncNotice?> = combine(
+        subtitleSyncFeedback.notice,
+        subtitleSyncProgressHidden,
+    ) { notice, hidden ->
+        notice?.takeUnless { it.tone == SubtitleSyncNotice.Tone.Progress && it.id in hidden }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    init {
+        viewModelScope.launch {
+            subtitleSyncFeedback.notice
+                .map { notice -> notice?.takeIf { it.tone == SubtitleSyncNotice.Tone.Progress }?.id }
+                .distinctUntilChanged()
+                .collectLatest { id ->
+                    if (id == null || id in subtitleSyncProgressHidden.value) return@collectLatest
+                    delay(subtitleSyncProgressVisibleMs)
+                    subtitleSyncProgressHidden.update { it + id }
+                }
+        }
+    }
     /** The cue revision of each sync key whose cues the player has in use. */
     private val loadedSubtitleCueRevisions = MutableStateFlow<Map<String, Int>>(emptyMap())
     /** Cue revisions of the last subtitle mount, until Media3 selects its subtitle track. */
