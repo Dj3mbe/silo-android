@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.HeartBroken
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.RemoveDone
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Tv
@@ -509,6 +510,18 @@ private fun TvDetailContent(
     ) {
         mutableStateOf(true)
     }
+    // The route's entry (a season, or an entry episode) takes the hero once,
+    // and never after the viewer chose Show Series Info. The page re-enters
+    // composition on back-stack pop, which restarts these effects, and Show
+    // Series Info restores the suggested episode as next up, which can be the
+    // entry episode again; neither may switch the hero back.
+    var entryHeroApplied by rememberSaveable(
+        detail.contentId,
+        initialSeasonNumber,
+        initialEpisodeContentId,
+    ) {
+        mutableStateOf(false)
+    }
     LaunchedEffect(
         initialSeasonNumber,
         initialEpisodeContentId,
@@ -517,6 +530,7 @@ private fun TvDetailContent(
         state.nextUpEpisode?.seasonNumber,
     ) {
         if (
+            !entryHeroApplied &&
             initialSeasonNumber != null &&
             initialEpisodeContentId == null &&
             state.selectedSeason == initialSeasonNumber &&
@@ -524,6 +538,7 @@ private fun TvDetailContent(
             (state.nextUpEpisode == null || state.nextUpEpisode.seasonNumber == initialSeasonNumber)
         ) {
             isShowingSeriesOverview = false
+            entryHeroApplied = true
         }
     }
     LaunchedEffect(
@@ -532,14 +547,16 @@ private fun TvDetailContent(
         state.nextUpEpisode?.contentId,
     ) {
         if (
+            !entryHeroApplied &&
             initialEpisodeContentId != null &&
             state.entryEpisodeSelectionApplied &&
             state.nextUpEpisode?.contentId == initialEpisodeContentId
         ) {
             isShowingSeriesOverview = false
+            entryHeroApplied = true
         }
     }
-    // tvOS treats Show / Season tabs, Episodes and the playback selector as a
+    // tvOS treats the season tabs, Episodes and the playback selector as a
     // single fixed first viewport. Supporting rails only begin vertical page
     // movement after focus leaves that complete primary region.
     val seriesPrimaryViewportActive = remember(detail.contentId) { mutableStateOf(false) }
@@ -1021,11 +1038,11 @@ private fun TvDetailContent(
                                 )
                             },
                             actions = {
-                                // Series keeps the full action row in both Show
-                                // and Season browsing modes. Because episode
-                                // focus updates state.nextUpEpisode, Play/Resume
-                                // always follows the focused episode while the
-                                // other Show-level actions stay available.
+                                // Series keeps the full action row whether the
+                                // hero shows the series or an episode. Because
+                                // episode focus updates state.nextUpEpisode,
+                                // Play/Resume always follows the focused episode
+                                // while the series-level actions stay available.
                                 HeroActionRow(
                                     detail = detail,
                                     state = state,
@@ -1040,7 +1057,7 @@ private fun TvDetailContent(
                                     moreActionsRequest = moreActionsRequest,
                                     onMoreActionsConsumed = { moreActionsRequest = 0 },
                                     // Season mode marks the selected season;
-                                    // Show mode offers only the whole series.
+                                    // the series overview offers only the whole series.
                                     watchedSeason = state.seasons
                                         .firstOrNull { it.seasonNumber == state.selectedSeason }
                                         ?.takeIf { isSeriesDetail && !isShowingSeriesOverview && it.episodeCount > 0 },
@@ -1072,6 +1089,17 @@ private fun TvDetailContent(
                                             org.siloserver.silo.model.shuffle.ShuffleScopeKind.SEASON,
                                             season.contentId,
                                         )
+                                    },
+                                    // As on tvOS, More > Show Series Info is the
+                                    // way back from an episode to the series.
+                                    onShowSeriesInfo = if (isSeriesDetail && !isShowingSeriesOverview) {
+                                        {
+                                            isShowingSeriesOverview = true
+                                            entryHeroApplied = true
+                                            viewModel.onSeriesEpisodeActivated(null)
+                                        }
+                                    } else {
+                                        null
                                     },
                                 )
                             },
@@ -1216,11 +1244,6 @@ private fun TvDetailContent(
                                 entryEpisodeContentId = initialEpisodeContentId
                                     ?.takeUnless { state.entryEpisodeSelectionApplied },
                                 showsSeasonChips = showsSeasonChips,
-                                isShowingSeriesOverview = isShowingSeriesOverview,
-                                onShowSelected = {
-                                    isShowingSeriesOverview = true
-                                    viewModel.onSeriesEpisodeActivated(null)
-                                },
                                 onReturnToHero = returnToHero,
                                 onReturnToSeriesSelector = if (isSeriesDetail) {
                                     {
@@ -1800,6 +1823,8 @@ private fun HeroActionRow(
     onShuffleSeason: (org.siloserver.silo.model.catalog.Season) -> Unit = {},
     moreActionsRequest: Int = 0,
     onMoreActionsConsumed: () -> Unit = {},
+    /** Series page only, while the hero shows an episode: returns it to the series. */
+    onShowSeriesInfo: (() -> Unit)? = null,
 ) {
     val resources = localizedResources()
     val watchPartyEntry = rememberTvWatchPartyDetailEntry()
@@ -2148,6 +2173,20 @@ private fun HeroActionRow(
                     ),
                 )
             }
+            // tvOS places this right after Shuffle.
+            onShowSeriesInfo?.let { showSeriesInfo ->
+                add(
+                    TvDialogOption(
+                        key = "show-series-info",
+                        title = resources.getString(CommonR.string.detail_more_showSeriesInfo),
+                        icon = Icons.Rounded.Info,
+                        onClick = {
+                            moreOpen = false
+                            showSeriesInfo()
+                        },
+                    ),
+                )
+            }
             add(
                 TvDialogOption(
                     key = "favorite",
@@ -2354,8 +2393,6 @@ private fun EpisodesSection(
     state: TvItemDetailUiState,
     entryEpisodeContentId: String?,
     showsSeasonChips: Boolean,
-    isShowingSeriesOverview: Boolean,
-    onShowSelected: () -> Unit,
     onReturnToHero: () -> Boolean,
     onReturnToSeriesSelector: (() -> Boolean)? = null,
     onSeasonSelected: (org.siloserver.silo.model.catalog.Season) -> Unit,
@@ -2400,9 +2437,7 @@ private fun EpisodesSection(
             if (isSeries) {
                 TvSeriesModePicker(
                     seasons = state.seasons,
-                    isShowingSeriesOverview = isShowingSeriesOverview,
                     selectedSeason = state.selectedSeason,
-                    onShowSelected = onShowSelected,
                     onSeasonSelected = onSeasonSelected,
                     // Return to the circular Version control in the hero; if
                     // it is not attached yet, fall back to Play.
@@ -2993,7 +3028,7 @@ internal fun resolveTvDetailHeroArtwork(
 private val DetailAnchorScrollSpec = tween<Float>(durationMillis = 400, easing = FastOutSlowInEasing)
 
 /** tvOS Series uses a slower, single smooth curve when supporting content
- * hands focus back to the fixed Show/Season/Episodes/Version viewport. */
+ * hands focus back to the fixed Season/Episodes/Version viewport. */
 private val SeriesPrimaryScrollSpec = tween<Float>(durationMillis = 800, easing = FastOutSlowInEasing)
 
 /**

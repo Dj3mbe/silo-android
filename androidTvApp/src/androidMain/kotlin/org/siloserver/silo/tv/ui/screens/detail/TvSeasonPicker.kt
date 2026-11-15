@@ -64,7 +64,6 @@ import org.siloserver.silo.tv.ui.theme.SelectedFill
 import org.siloserver.silo.tv.ui.theme.SelectedStroke
 import org.siloserver.silo.tv.ui.theme.TvControlCorner
 import android.content.res.Resources
-import androidx.compose.ui.res.stringResource
 import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.tv.ui.theme.glassSheen
 
@@ -149,17 +148,17 @@ fun TvSeasonPicker(
 }
 
 /**
- * Combined Series mode row from the approved tvOS page: Show first, followed
- * by every season. These are true capsules with a fixed footprint and no focus
- * scale, so lateral movement never shifts its neighbours.
+ * Season row of the combined Series page, matching tvOS: seasons only. The
+ * selected season stays highlighted while the hero shows the series overview,
+ * since the rail below still lists its episodes; More > Show Series Info
+ * returns the hero to the series. These are true capsules with a fixed
+ * footprint and no focus scale, so lateral movement never shifts its neighbours.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvSeriesModePicker(
     seasons: List<Season>,
-    isShowingSeriesOverview: Boolean,
     selectedSeason: Int?,
-    onShowSelected: () -> Unit,
     onSeasonSelected: (Season) -> Unit,
     modifier: Modifier = Modifier,
     horizontalContentPadding: Dp = 0.dp,
@@ -171,21 +170,15 @@ fun TvSeriesModePicker(
 ) {
     val listState = rememberLazyListState()
     val selectedFocusRequester = remember { FocusRequester() }
-    val selectedIndex = remember(isShowingSeriesOverview, selectedSeason, seasons) {
-        if (isShowingSeriesOverview) {
-            0
-        } else {
-            seasons.indexOfFirst { it.seasonNumber == selectedSeason }
-                .takeIf { it >= 0 }
-                ?.plus(1)
-                ?: 0
-        }
+    val selectedIndex = remember(selectedSeason, seasons) {
+        seasons.indexOfFirst { it.seasonNumber == selectedSeason }.takeIf { it >= 0 }
     }
 
     LaunchedEffect(selectedIndex, seasons.size) {
-        listState.scrollToItem(selectedIndex)
+        val idx = selectedIndex ?: return@LaunchedEffect
+        listState.scrollToItem(idx)
         val info = listState.layoutInfo
-        val item = info.visibleItemsInfo.firstOrNull { it.index == selectedIndex }
+        val item = info.visibleItemsInfo.firstOrNull { it.index == idx }
             ?: return@LaunchedEffect
         val viewportCenter = (info.viewportStartOffset + info.viewportEndOffset) / 2f
         val itemCenter = item.offset + item.size / 2f
@@ -194,7 +187,13 @@ fun TvSeriesModePicker(
 
     LazyRow(
         modifier = modifier
-            .focusProperties { enter = { selectedFocusRequester } }
+            // Only a tab for the selected season holds the requester; while
+            // seasons load or none is selected, keep the default entry.
+            .focusProperties {
+                selectedIndex?.let {
+                    enter = { selectedFocusRequester }
+                }
+            }
             .then(
                 if (onDirectionUp != null) {
                     Modifier.onPreviewKeyEvent { event ->
@@ -213,25 +212,12 @@ fun TvSeriesModePicker(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         contentPadding = PaddingValues(horizontal = horizontalContentPadding, vertical = 2.dp),
     ) {
-        item(key = "series-show-overview", contentType = "series-mode") {
-            TvSeriesModeTab(
-                title = stringResource(CommonR.string.detail_seriesShowTab),
-                isSelected = isShowingSeriesOverview,
-                onActivated = onShowSelected,
-                onLongPress = onShowLongPress,
-                modifier = if (isShowingSeriesOverview) {
-                    Modifier.focusRequester(selectedFocusRequester)
-                } else {
-                    Modifier
-                },
-            )
-        }
         items(
             seasons,
             key = { "series-season-${it.seasonNumber}-${it.contentId}" },
             contentType = { "series-mode" },
         ) { season ->
-            val selected = !isShowingSeriesOverview && season.seasonNumber == selectedSeason
+            val selected = season.seasonNumber == selectedSeason
             TvSeriesModeTab(
                 title = tvSeasonPickerLabel(localizedResources(), season),
                 isSelected = selected,
@@ -333,7 +319,7 @@ private fun TvSeriesModeTab(
             .background(fill, CircleShape)
             .glassSheen(CircleShape, visible = isSelected && !isFocused)
             .border(borderWidth, borderColor, CircleShape)
-            // tvOS treats Show and each season as focus-driven modes: moving
+            // tvOS treats each season as a focus-driven mode: moving
             // laterally updates the page immediately, without an extra Select.
             // The ViewModel ignores the already-selected season and generation-
             // guards quick successive loads while the existing selectedIndex
