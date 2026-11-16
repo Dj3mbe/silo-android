@@ -1,5 +1,6 @@
 package org.siloserver.silo.android.ui.components
 
+import org.siloserver.silo.common.i18n.displayUppercase
 import org.siloserver.silo.common.ui.components.SpoilerImage
 import org.siloserver.silo.common.ui.components.DefaultArtworkKind
 import org.siloserver.silo.common.ui.components.ThumbhashImage
@@ -50,6 +51,7 @@ import org.siloserver.silo.common.overlays.CardOverlays
 import org.siloserver.silo.common.overlays.CardWatchStatusBadge
 import org.siloserver.silo.common.overlays.LocalCardOverlayUiState
 import org.siloserver.silo.model.catalog.MediaItemUserState
+import org.siloserver.silo.model.catalog.isAudiobookItemType
 import org.siloserver.silo.overlays.CardWatchStatus
 import org.siloserver.silo.overlays.OverlayData
 import org.siloserver.silo.common.i18n.LocaleFormat
@@ -76,6 +78,21 @@ object MediaGridDefaults {
             PosterGridMinWidth * LocalCardPresentation.current.posterSize.posterScale
 }
 
+/** iOS `posterAspectRatio`: 2 : 3.3 (posterCardWidth 120 / height 198). */
+const val PosterArtworkAspectRatio = 2f / 3.3f
+
+/** The artwork shape of a card for an item of [type]: audiobook covers are square everywhere, as on iOS and tvOS. */
+fun cardArtworkAspectRatio(type: String?): Float =
+    if (isAudiobookItemType(type)) 1f else PosterArtworkAspectRatio
+
+/** Every item is an audiobook, so a row or grid of them shows square covers (iOS `isAudiobookRow`). */
+fun areAllAudiobooks(types: List<String?>): Boolean =
+    types.isNotEmpty() && types.all(::isAudiobookItemType)
+
+/** One artwork shape for a whole row or grid of [types], so its cards keep one height. */
+fun sharedArtworkAspectRatio(types: List<String?>): Float =
+    if (areAllAudiobooks(types)) 1f else PosterArtworkAspectRatio
+
 /**
  * The core media poster card used throughout the app.
  *
@@ -99,7 +116,7 @@ fun MediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     width: Dp = 120.dp * LocalCardPresentation.current.posterSize.posterScale,
-    artworkAspectRatio: Float = 2f / 3.3f,
+    artworkAspectRatio: Float = cardArtworkAspectRatio(type),
     overlay: OverlayData? = null,
     actions: MediaCardActions = MediaCardActions(),
     /**
@@ -166,7 +183,6 @@ fun MediaCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                // iOS posterAspectRatio = 2 : 3.3 (posterCardWidth 120 / height 198).
                 .aspectRatio(artworkAspectRatio)
                 // Outside the clip below, so they show above the artwork.
                 .then(if (sleeves != null) Modifier.boxSetSleeves(sleeves) else Modifier)
@@ -216,7 +232,7 @@ fun MediaCard(
 
             if (badge != null) {
                 Text(
-                    text = badge.uppercase(),
+                    text = badge.displayUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.2.sp,
@@ -326,7 +342,7 @@ private fun MediaCardTextLinesTemplate() {
 fun MediaCardPlaceholder(
     modifier: Modifier = Modifier,
     width: Dp = 120.dp * LocalCardPresentation.current.posterSize.posterScale,
-    artworkAspectRatio: Float = 2f / 3.3f,
+    artworkAspectRatio: Float = PosterArtworkAspectRatio,
 ) {
     Column(
         modifier = modifier.width(width),

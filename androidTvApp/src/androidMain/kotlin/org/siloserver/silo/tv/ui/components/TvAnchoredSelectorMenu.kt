@@ -73,6 +73,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.siloserver.silo.tv.ui.theme.FocusAccent
 import org.siloserver.silo.tv.ui.theme.glassSheen
+import org.siloserver.silo.common.i18n.displayUppercase
 import org.siloserver.silo.tv.ui.theme.SiloOnSurface
 import org.siloserver.silo.tv.ui.screens.player.TvPlayerType
 
@@ -270,7 +271,7 @@ internal fun TvAnchoredSelectorMenu(
                     )
                     Spacer(Modifier.width(7.dp))
                     Text(
-                        text = label.uppercase(),
+                        text = label.displayUppercase(),
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontSize = 14.sp,
                             lineHeight = 18.sp,
@@ -373,7 +374,7 @@ internal fun TvAnchoredSelectorMenu(
                     },
             ) {
                 Text(
-                    text = label.uppercase(),
+                    text = label.displayUppercase(),
                     style = TvPlayerType.Eyebrow,
                     maxLines = 1,
                     modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 6.dp),
