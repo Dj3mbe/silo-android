@@ -199,6 +199,8 @@ fun TvSearchScreen(
     val searchGridState = rememberLazyGridState()
     // The "To request" chip: hides library results so only the request row shows.
     var requestsOnly by rememberSaveable { mutableStateOf(false) }
+    // The "People" chip: hides the people row without touching the lookup.
+    var showPeople by rememberSaveable { mutableStateOf(true) }
     val activeSearchFieldFocusRequester = searchFieldFocusRequester ?: internalSearchFieldFocusRequester
     val keyboardController = LocalSoftwareKeyboardController.current
     var hasEnteredSearch by rememberSaveable { mutableStateOf(false) }
@@ -267,7 +269,7 @@ fun TvSearchScreen(
     // nearest the chips), results, then the error's "Try again", then the
     // request row.
     val libraryItems = if (requestsOnly) emptyList() else state.items
-    val libraryPeople = if (requestsOnly) emptyList() else state.people
+    val libraryPeople = if (requestsOnly || !showPeople) emptyList() else state.people
     val firstContentFocusRequester = when {
         libraryPeople.isNotEmpty() -> firstPersonFocusRequester
         libraryItems.isNotEmpty() -> firstResultFocusRequester
@@ -712,6 +714,9 @@ fun TvSearchScreen(
                     availableMediaTypes = state.availableMediaTypes,
                     requestsOnly = requestsOnly,
                     onRequestsOnlyChanged = { requestsOnly = it },
+                    showPeople = showPeople,
+                    onShowPeopleChanged = { showPeople = it },
+                    hasPeople = state.people.isNotEmpty(),
                     resultStatus = searchFilterStatus(
                         query = state.query,
                         mediaType = state.mediaType,
@@ -724,7 +729,7 @@ fun TvSearchScreen(
                             error = state.error,
                             isPartialCount = state.mediaType == TvSearchMediaType.All && state.hasMore,
                             isEstimatedCount = !state.totalExact,
-                            hasPeople = libraryPeople.isNotEmpty(),
+                            hasPeople = state.people.isNotEmpty(),
                         ),
                     ),
                     hasContentFocusTarget = hasContentFocusTarget,
@@ -895,8 +900,8 @@ fun TvSearchScreen(
                         onAction = viewModel::submitSearch,
                     )
                     // The people row above is the answer; the status line
-                    // already says no titles matched.
-                    libraryPeople.isNotEmpty() || requestsOnly -> Unit
+                    // already says no titles matched. Hidden people still count.
+                    state.people.isNotEmpty() || requestsOnly -> Unit
                     else -> SearchFeedbackMessage(
                         title = stringResourceWithNames(CommonR.string.search_noMatches, state.query),
                         body = stringResource(CommonR.string.search_noMatchesBody),
@@ -1051,6 +1056,9 @@ private fun SearchStage(
     availableMediaTypes: List<TvSearchMediaType>,
     requestsOnly: Boolean,
     onRequestsOnlyChanged: (Boolean) -> Unit,
+    showPeople: Boolean,
+    onShowPeopleChanged: (Boolean) -> Unit,
+    hasPeople: Boolean,
     resultStatus: String?,
     hasContentFocusTarget: Boolean,
     searchFieldFocusRequester: FocusRequester,
@@ -1345,6 +1353,33 @@ private fun SearchStage(
                     ),
                 )
             }
+            if (hasPeople) {
+                item(contentType = "people-chip") {
+                    TvFilterChip(
+                        text = stringResource(CommonR.string.search_people),
+                        selected = showPeople && !requestsOnly,
+                        onClick = {
+                            // Request mode has no people, so the first press
+                            // leaves Request and shows them again.
+                            if (requestsOnly) {
+                                onRequestsOnlyChanged(false)
+                                onShowPeopleChanged(true)
+                            } else {
+                                onShowPeopleChanged(!showPeople)
+                            }
+                        },
+                        modifier = Modifier.focusProperties {
+                            up = searchFieldFocusRequester
+                            if (hasContentFocusTarget) down = firstContentFocusRequester
+                        },
+                        contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
+                        textStyle = MaterialTheme.typography.labelMedium.copy(
+                            fontSize = 14.sp,
+                            lineHeight = 18.sp,
+                        ),
+                    )
+                }
+            }
         }
 
         // An empty minimum line keeps the header stable while allowing the
@@ -1356,8 +1391,8 @@ private fun SearchStage(
             minLines = 1,
         )
 
-        // Not emitted in Request mode: an empty slot still gets the column's gap.
-        if (!requestsOnly) peopleRow()
+        // Not emitted when hidden: an empty slot still gets the column's gap.
+        if (showPeople && !requestsOnly) peopleRow()
     }
 }
 
