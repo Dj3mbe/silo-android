@@ -197,6 +197,8 @@ fun TvSearchScreen(
     val firstFilterChipFocusRequester = remember { FocusRequester() }
     val internalSearchFieldFocusRequester = remember { FocusRequester() }
     val searchGridState = rememberLazyGridState()
+    // The "To request" chip: hides library results so only the request row shows.
+    var requestsOnly by rememberSaveable { mutableStateOf(false) }
     val activeSearchFieldFocusRequester = searchFieldFocusRequester ?: internalSearchFieldFocusRequester
     val keyboardController = LocalSoftwareKeyboardController.current
     var hasEnteredSearch by rememberSaveable { mutableStateOf(false) }
@@ -264,14 +266,15 @@ fun TvSearchScreen(
     // Same precedence as the post-search handoff below: people (the row
     // nearest the chips), results, then the error's "Try again", then the
     // request row.
+    val libraryItems = if (requestsOnly) emptyList() else state.items
     val firstContentFocusRequester = when {
         state.people.isNotEmpty() -> firstPersonFocusRequester
-        state.items.isNotEmpty() -> firstResultFocusRequester
+        libraryItems.isNotEmpty() -> firstResultFocusRequester
         state.error != null -> feedbackActionFocusRequester
         visibleRequestResults.isNotEmpty() -> firstRequestResultFocusRequester
         else -> firstFilterChipFocusRequester
     }
-    val hasContentFocusTarget = state.items.isNotEmpty() ||
+    val hasContentFocusTarget = libraryItems.isNotEmpty() ||
         state.people.isNotEmpty() ||
         visibleRequestResults.isNotEmpty() ||
         state.error != null
@@ -345,7 +348,7 @@ fun TvSearchScreen(
     }
 
     LaunchedEffect(activeSearchFieldFocusRequester) {
-        val hasResults = state.items.isNotEmpty() || visibleRequestResults.isNotEmpty()
+        val hasResults = libraryItems.isNotEmpty() || visibleRequestResults.isNotEmpty()
         if (shouldFocusSearchField(hasEnteredSearch, hasResults, explicitFieldRequest = false)) {
             requestFocusUntilObserved(
                 maxAttempts = TvContentInitialFocusMaxAttempts,
@@ -588,7 +591,7 @@ fun TvSearchScreen(
         // land on. Library results are the primary target and arrive first;
         // holding them hostage to a slow TMDB round-trip left the user parked
         // on the search field with results visibly sitting there.
-        if (state.items.isEmpty() && !requestSearchSettled) return@LaunchedEffect
+        if (libraryItems.isEmpty() && !requestSearchSettled) return@LaunchedEffect
         // A return outranks a stale submit. Submitting, walking down to a card
         // that the reset had not yet cleared, and opening it leaves this armed
         // on a retained composition — and on the way back both effects would
@@ -602,14 +605,14 @@ fun TvSearchScreen(
         // action was the one thing not on screen.
         val postSearchTarget = when {
             state.people.isNotEmpty() -> firstPersonFocusRequester
-            state.items.isNotEmpty() -> firstResultFocusRequester
+            libraryItems.isNotEmpty() -> firstResultFocusRequester
             state.error != null -> feedbackActionFocusRequester
             visibleRequestResults.isNotEmpty() -> firstRequestResultFocusRequester
             else -> firstFilterChipFocusRequester
         }
         val postSearchRegion = when {
             state.people.isNotEmpty() -> TvSearchFocusRegion.People
-            state.items.isNotEmpty() -> TvSearchFocusRegion.CatalogResults
+            libraryItems.isNotEmpty() -> TvSearchFocusRegion.CatalogResults
             state.error != null -> TvSearchFocusRegion.Feedback
             visibleRequestResults.isNotEmpty() -> TvSearchFocusRegion.RequestResults
             else -> TvSearchFocusRegion.Chips
@@ -642,7 +645,7 @@ fun TvSearchScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         TvCatalogGrid(
-            items = state.items,
+            items = libraryItems,
             // Reset searches keep the existing grid stable and report progress
             // in the pinned status line. Only pagination owns a grid spinner.
             isLoading = state.isLoadingMore,
@@ -705,6 +708,8 @@ fun TvSearchScreen(
                     query = state.query,
                     mediaType = state.mediaType,
                     availableMediaTypes = state.availableMediaTypes,
+                    requestsOnly = requestsOnly,
+                    onRequestsOnlyChanged = { requestsOnly = it },
                     resultStatus = searchStatusText(
                         query = state.query,
                         total = state.total,
@@ -767,7 +772,7 @@ fun TvSearchScreen(
                             cardModifier = Modifier.focusProperties {
                                 up = firstFilterChipFocusRequester
                                 when {
-                                    state.items.isNotEmpty() -> Unit
+                                    libraryItems.isNotEmpty() -> Unit
                                     state.error != null -> down = feedbackActionFocusRequester
                                     visibleRequestResults.isNotEmpty() -> down = firstRequestResultFocusRequester
                                 }
@@ -845,7 +850,7 @@ fun TvSearchScreen(
                     // "Try again" and landed on the chips or the field.
                     cardModifier = Modifier.focusProperties {
                         when {
-                            state.items.isNotEmpty() -> Unit
+                            libraryItems.isNotEmpty() -> Unit
                             state.error != null -> up = feedbackActionFocusRequester
                             state.people.isNotEmpty() -> up = firstPersonFocusRequester
                             else -> up = firstFilterChipFocusRequester
@@ -1036,6 +1041,8 @@ private fun SearchStage(
     query: String,
     mediaType: TvSearchMediaType,
     availableMediaTypes: List<TvSearchMediaType>,
+    requestsOnly: Boolean,
+    onRequestsOnlyChanged: (Boolean) -> Unit,
     resultStatus: String?,
     hasContentFocusTarget: Boolean,
     searchFieldFocusRequester: FocusRequester,
@@ -1299,6 +1306,24 @@ private fun SearchStage(
                     selected = mediaType == type,
                     onClick = { onMediaTypeChanged(type) },
                     modifier = chipModifier,
+                    contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
+                    textStyle = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                    ),
+                )
+            }
+            item(contentType = "requests-only-chip") {
+                TvFilterChip(
+                    text = stringResource(CommonR.string.search_requestsOnlyChip),
+                    selected = requestsOnly,
+                    onClick = { onRequestsOnlyChanged(!requestsOnly) },
+                    modifier = Modifier.focusProperties {
+                        // Same routing as the media-type chips: UP to the field,
+                        // DOWN to the first content row when there is one.
+                        up = searchFieldFocusRequester
+                        if (hasContentFocusTarget) down = firstContentFocusRequester
+                    },
                     contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
                     textStyle = MaterialTheme.typography.labelMedium.copy(
                         fontSize = 14.sp,

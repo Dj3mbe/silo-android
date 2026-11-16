@@ -4760,6 +4760,8 @@
     <string name="search_requests_failed">Request search failed.</string>
     <!-- Android phone and TV: heading of the search results that are not in the library and can be requested. -->
     <string name="search_requests_title">Available to request</string>
+    <!-- Android TV: search chip that hides library results and shows only the request row. -->
+    <string name="search_requestsOnlyChip">To request</string>
     <!-- Number of search results, shown above the results. {count}: the number of results. -->
     <plurals name="search_result">
         <item quantity="one">%1$d result</item>
