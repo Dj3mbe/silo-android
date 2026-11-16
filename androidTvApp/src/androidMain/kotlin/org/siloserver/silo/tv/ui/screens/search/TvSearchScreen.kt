@@ -1454,7 +1454,6 @@ private fun availableMediaDescription(mediaTypes: List<TvSearchMediaType>): Int 
     TvSearchScope.VideoAndAudiobooks -> CommonR.string.search_scope_videoAndAudiobooks
 }
 
-@Composable
 /**
  * The line under the filter chips: what the active filter shows, then the
  * count for it. Requests-only counts request results, not library results.
@@ -1486,6 +1485,7 @@ private fun searchFilterStatus(
     }
 }
 
+@Composable
 private fun searchStatusText(
     query: String,
     total: Int,
