@@ -1355,7 +1355,8 @@ private fun SearchStage(
             minLines = 1,
         )
 
-        peopleRow()
+        // Not emitted in Request mode: an empty slot still gets the column's gap.
+        if (!requestsOnly) peopleRow()
     }
 }
 
