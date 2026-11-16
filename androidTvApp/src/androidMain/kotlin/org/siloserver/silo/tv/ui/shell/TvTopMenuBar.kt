@@ -201,6 +201,8 @@ fun TvTopMenuBar(
     onInstallAnchorFocus: ((TvTopMenuPanel?) -> Boolean) -> Unit = {},
     profileFocusRequest: Int = 0,
     isSearchActive: Boolean = false,
+    /** Where a focus request with no bar target lands when no tab is selected: Search, else Home. */
+    focusSearchWhenNoTab: Boolean = false,
     visibility: Float = 1f,
     openPanel: TvTopMenuPanel? = null,
     onDwell: (TvTopMenuPanel?) -> Unit = {},
@@ -282,7 +284,7 @@ fun TvTopMenuBar(
         TvRootDestination.Calendar -> calendarFocusRequester
         is TvRootDestination.LibraryType -> tabFocusRequesters[root.type] ?: homeFocusRequester
         TvRootDestination.ForYou -> forYouFocusRequester
-        null -> if (isSearchActive) searchFocusRequester else homeFocusRequester
+        null -> if (isSearchActive || focusSearchWhenNoTab) searchFocusRequester else homeFocusRequester
     }
 
     // Focus the selected tab when `focusRequest` actually changes (the

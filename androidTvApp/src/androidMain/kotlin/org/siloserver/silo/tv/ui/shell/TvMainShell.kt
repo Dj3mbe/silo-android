@@ -1701,6 +1701,8 @@ fun TvMainShell(
             // composed — removing it afterwards then has no focus to recover.
             onInstallAnchorFocus = { hook -> focusState.focusBarAnchorNow = hook },
             profileFocusRequest = focusState.profileFocusRequest,
+            focusSearchWhenNoTab = currentRoute == TvMainRoute.Search.route ||
+                currentRoute == TvMainRoute.Requests.route,
             isSearchActive = currentRoute == TvMainRoute.Search.route,
             // Request detail is a full detail page like a library title's,
             // which has no bar either (tvOS pushes it over the tab).
