@@ -267,15 +267,16 @@ fun TvSearchScreen(
     // nearest the chips), results, then the error's "Try again", then the
     // request row.
     val libraryItems = if (requestsOnly) emptyList() else state.items
+    val libraryPeople = if (requestsOnly) emptyList() else state.people
     val firstContentFocusRequester = when {
-        state.people.isNotEmpty() -> firstPersonFocusRequester
+        libraryPeople.isNotEmpty() -> firstPersonFocusRequester
         libraryItems.isNotEmpty() -> firstResultFocusRequester
         state.error != null -> feedbackActionFocusRequester
         visibleRequestResults.isNotEmpty() -> firstRequestResultFocusRequester
         else -> firstFilterChipFocusRequester
     }
     val hasContentFocusTarget = libraryItems.isNotEmpty() ||
-        state.people.isNotEmpty() ||
+        libraryPeople.isNotEmpty() ||
         visibleRequestResults.isNotEmpty() ||
         state.error != null
 
@@ -370,7 +371,7 @@ fun TvSearchScreen(
         state.isLoading,
         state.isLoadingMore,
         state.items,
-        state.people,
+        libraryPeople,
         state.isLoadingPeople,
         visibleRequestResults,
         requestSearchSettled,
@@ -427,7 +428,7 @@ fun TvSearchScreen(
             // results is not yet absent.
             catalogComplete = !state.hasMore,
             requestsComplete = requestSearchSettled,
-            people = state.people,
+            people = libraryPeople,
             peopleComplete = !state.isLoadingPeople,
         )
         fun resolve(final: Boolean) = resolveTvReturnTarget(
@@ -577,7 +578,7 @@ fun TvSearchScreen(
         state.isLoading,
         requestSearchSettled,
         state.items.size,
-        state.people.size,
+        libraryPeople.size,
         state.isLoadingPeople,
         visibleRequestResults.size,
     ) {
@@ -604,14 +605,14 @@ fun TvSearchScreen(
         // screen looked broken rather than merely failed, and the recovery
         // action was the one thing not on screen.
         val postSearchTarget = when {
-            state.people.isNotEmpty() -> firstPersonFocusRequester
+            libraryPeople.isNotEmpty() -> firstPersonFocusRequester
             libraryItems.isNotEmpty() -> firstResultFocusRequester
             state.error != null -> feedbackActionFocusRequester
             visibleRequestResults.isNotEmpty() -> firstRequestResultFocusRequester
             else -> firstFilterChipFocusRequester
         }
         val postSearchRegion = when {
-            state.people.isNotEmpty() -> TvSearchFocusRegion.People
+            libraryPeople.isNotEmpty() -> TvSearchFocusRegion.People
             libraryItems.isNotEmpty() -> TvSearchFocusRegion.CatalogResults
             state.error != null -> TvSearchFocusRegion.Feedback
             visibleRequestResults.isNotEmpty() -> TvSearchFocusRegion.RequestResults
@@ -701,7 +702,7 @@ fun TvSearchScreen(
             // spatial focus search can prefer the wider search field above and
             // skip over the smaller chip row.
             firstItemCardModifier = Modifier.focusProperties {
-                up = if (state.people.isNotEmpty()) firstPersonFocusRequester else firstFilterChipFocusRequester
+                up = if (libraryPeople.isNotEmpty()) firstPersonFocusRequester else firstFilterChipFocusRequester
             },
             header = {
                 SearchStage(
@@ -722,7 +723,7 @@ fun TvSearchScreen(
                             error = state.error,
                             isPartialCount = state.mediaType == TvSearchMediaType.All && state.hasMore,
                             isEstimatedCount = !state.totalExact,
-                            hasPeople = state.people.isNotEmpty(),
+                            hasPeople = libraryPeople.isNotEmpty(),
                         ),
                     ),
                     hasContentFocusTarget = hasContentFocusTarget,
@@ -767,7 +768,7 @@ fun TvSearchScreen(
                     onKeyboardOpenChanged = setKeyboardOpen,
                     peopleRow = {
                         TvSearchPeopleRow(
-                            people = state.people,
+                            people = libraryPeople,
                             firstItemFocusRequester = firstPersonFocusRequester,
                             restoreItemIndex = restorePeopleIndex,
                             restoreItemFocusRequester = restorePeopleFocusRequester,
@@ -858,7 +859,7 @@ fun TvSearchScreen(
                         when {
                             libraryItems.isNotEmpty() -> Unit
                             state.error != null -> up = feedbackActionFocusRequester
-                            state.people.isNotEmpty() -> up = firstPersonFocusRequester
+                            libraryPeople.isNotEmpty() -> up = firstPersonFocusRequester
                             else -> up = firstFilterChipFocusRequester
                         }
                     },
@@ -877,7 +878,7 @@ fun TvSearchScreen(
                         body = state.error?.text().orEmpty(),
                         actionLabel = stringResource(CommonR.string.common_tryAgain),
                         actionFocusRequester = feedbackActionFocusRequester,
-                        actionUpFocusRequester = if (state.people.isNotEmpty()) {
+                        actionUpFocusRequester = if (libraryPeople.isNotEmpty()) {
                             firstPersonFocusRequester
                         } else {
                             firstFilterChipFocusRequester
@@ -894,7 +895,7 @@ fun TvSearchScreen(
                     )
                     // The people row above is the answer; the status line
                     // already says no titles matched.
-                    state.people.isNotEmpty() -> Unit
+                    libraryPeople.isNotEmpty() || requestsOnly -> Unit
                     else -> SearchFeedbackMessage(
                         title = stringResourceWithNames(CommonR.string.search_noMatches, state.query),
                         body = stringResource(CommonR.string.search_noMatchesBody),
@@ -1309,8 +1310,11 @@ private fun SearchStage(
                     )
                 TvFilterChip(
                     text = stringResource(type.label),
-                    selected = mediaType == type,
-                    onClick = { onMediaTypeChanged(type) },
+                    selected = mediaType == type && !requestsOnly,
+                    onClick = {
+                        onRequestsOnlyChanged(false)
+                        onMediaTypeChanged(type)
+                    },
                     modifier = chipModifier,
                     contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
                     textStyle = MaterialTheme.typography.labelMedium.copy(
@@ -1323,7 +1327,10 @@ private fun SearchStage(
                 TvFilterChip(
                     text = stringResource(CommonR.string.search_requestsOnlyChip),
                     selected = requestsOnly,
-                    onClick = { onRequestsOnlyChanged(!requestsOnly) },
+                    onClick = {
+                        if (!requestsOnly) onMediaTypeChanged(TvSearchMediaType.All)
+                        onRequestsOnlyChanged(!requestsOnly)
+                    },
                     modifier = Modifier.focusProperties {
                         // Same routing as the media-type chips: UP to the field,
                         // DOWN to the first content row when there is one.
