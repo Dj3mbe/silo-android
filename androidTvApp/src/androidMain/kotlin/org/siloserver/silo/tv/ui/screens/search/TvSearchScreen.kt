@@ -1346,8 +1346,6 @@ private fun SearchStage(
             }
         }
 
-        peopleRow()
-
         // An empty minimum line keeps the header stable while allowing the
         // actual typography to grow at accessibility text scales.
         Text(
@@ -1356,6 +1354,8 @@ private fun SearchStage(
             color = Color.White.copy(alpha = 0.62f),
             minLines = 1,
         )
+
+        peopleRow()
     }
 }
 
