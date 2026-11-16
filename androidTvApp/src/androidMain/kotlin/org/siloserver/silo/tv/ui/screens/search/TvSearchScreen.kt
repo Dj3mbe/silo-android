@@ -647,6 +647,7 @@ fun TvSearchScreen(
     ) {
         TvCatalogGrid(
             items = libraryItems,
+            hideEmptyState = requestsOnly,
             // Reset searches keep the existing grid stable and report progress
             // in the pinned status line. Only pagination owns a grid spinner.
             isLoading = state.isLoadingMore,

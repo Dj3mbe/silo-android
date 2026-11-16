@@ -129,6 +129,8 @@ fun TvCatalogGrid(
     header: (@Composable () -> Unit)? = null,
     footer: (@Composable () -> Unit)? = null,
     emptyState: (@Composable () -> Unit)? = null,
+    /** Skips the empty-state slot entirely, so no padded box is reserved for it. */
+    hideEmptyState: Boolean = false,
 ) {
     val resolvedGridState = gridState ?: rememberLazyGridState()
     // Keyed lazy lists throw on a repeated key, which is fatal. Paging can
@@ -260,7 +262,7 @@ fun TvCatalogGrid(
             }
         }
 
-        if (uniqueItems.isEmpty() && !isLoading && emptyState != null) {
+        if (uniqueItems.isEmpty() && !isLoading && emptyState != null && !hideEmptyState) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Box(
                     modifier = Modifier
