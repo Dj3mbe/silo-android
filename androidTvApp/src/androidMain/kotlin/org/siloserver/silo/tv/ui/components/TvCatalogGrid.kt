@@ -1,7 +1,5 @@
 package org.siloserver.silo.tv.ui.components
 
-import androidx.compose.foundation.border
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import org.siloserver.silo.common.R as CommonR
 import org.siloserver.silo.common.cards.LocalEpisodeSpoilerPrefs
@@ -267,8 +265,7 @@ fun TvCatalogGrid(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                        .border(3.dp, Color.Green),
+                        .padding(vertical = 16.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     emptyState()

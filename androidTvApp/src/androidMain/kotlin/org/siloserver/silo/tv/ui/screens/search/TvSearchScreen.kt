@@ -1,6 +1,5 @@
 package org.siloserver.silo.tv.ui.screens.search
 
-import androidx.compose.foundation.border
 import org.siloserver.silo.common.i18n.LocaleFormat
 import org.siloserver.silo.common.i18n.UiText
 import org.siloserver.silo.common.i18n.text
@@ -936,8 +935,7 @@ private fun TvRequestSearchSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = Spacing.md, bottom = 12.dp)
-            .border(3.dp, Color.Blue),
+            .padding(top = Spacing.md, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         TvSectionHeader(title = stringResource(CommonR.string.search_requests_title))
@@ -1089,7 +1087,6 @@ private fun SearchStage(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(3.dp, Color.Red)
             .padding(
                 top = TvTopMenuLayout.contentTopInset - 12.dp,
                 bottom = Spacing.sm,
