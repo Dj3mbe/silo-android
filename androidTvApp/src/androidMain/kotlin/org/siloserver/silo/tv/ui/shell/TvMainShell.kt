@@ -1260,7 +1260,8 @@ fun TvMainShell(
                                 if (shouldRequestMenuAfterContentUp(contentHandledUp, isRepeat)) {
                                     focusState.requestMenuFocusIfAvailable(
                                         selectedMenuFocusTarget,
-                                        allowNullTarget = currentRoute == TvMainRoute.Search.route,
+                                        allowNullTarget = currentRoute == TvMainRoute.Search.route ||
+                                            currentRoute == TvMainRoute.Requests.route,
                                     )
                                 }
                             } else {
@@ -1288,7 +1289,8 @@ fun TvMainShell(
                                 ) {
                                     focusState.requestMenuFocusIfAvailable(
                                         selectedMenuFocusTarget,
-                                        allowNullTarget = currentRoute == TvMainRoute.Search.route,
+                                        allowNullTarget = currentRoute == TvMainRoute.Search.route ||
+                                            currentRoute == TvMainRoute.Requests.route,
                                     )
                                 }
                             }
@@ -2011,13 +2013,12 @@ private fun mapRouteToRoot(route: String): TvRootDestination? = when (route) {
 
 /**
  * Bar element that owns a non-root route for content→bar Up (see
- * selectedMenuFocusTarget): For You for its saved lists, and the profile
- * avatar for Requests, which opens from the profile menu.
+ * selectedMenuFocusTarget): For You for its saved lists. Requests has no panel
+ * owner: the profile avatar would reopen the profile menu on Up.
  */
 internal fun menuFocusTargetForRoute(route: String): TvTopMenuPanel? = when (route) {
     TvMainRoute.Watchlist.route,
     TvMainRoute.Favorites.route -> TvTopMenuPanel.Root(TvRootDestination.ForYou)
-    TvMainRoute.Requests.route -> TvTopMenuPanel.Profile
     else -> null
 }
 

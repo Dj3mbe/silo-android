@@ -71,9 +71,10 @@ class TvMediaDestinationsTest {
 
     @Test
     fun upFromSecondaryContentReachesTheBarElementThatOpenedIt() {
-        // Requests opens from the profile menu, so Up from its first row goes
-        // to the avatar; the saved lists go to For You.
-        assertEquals(TvTopMenuPanel.Profile, menuFocusTargetForRoute(TvMainRoute.Requests.route))
+        // Requests has no panel owner, so Up from its first row goes to the bar's
+        // default element instead of reopening the profile menu; the saved lists
+        // go to For You.
+        assertEquals(null, menuFocusTargetForRoute(TvMainRoute.Requests.route))
         assertEquals(
             TvTopMenuPanel.Root(TvRootDestination.ForYou),
             menuFocusTargetForRoute(TvMainRoute.Watchlist.route),
