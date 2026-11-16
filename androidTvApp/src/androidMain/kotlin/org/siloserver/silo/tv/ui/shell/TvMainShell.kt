@@ -996,7 +996,11 @@ fun TvMainShell(
     // the (still-defined) Search route and drop focus into the search field.
     val onSearchPressed: () -> Unit = {
         if (TvMainRoute.Search.route != currentRoute) {
-            navigateToRoute(TvMainRoute.Search.route)
+            // Pushed like the profile menu's Requests entry. The save-and-restore
+            // in navigateToRoute can bring back a stale Requests entry.
+            nestedNav.navigate(TvMainRoute.Search.route) {
+                launchSingleTop = true
+            }
             moveFocusToContent(TvMainRoute.Search.route)
         } else {
             // Already on Search, perhaps scrolled far down the results, where
