@@ -4762,6 +4762,12 @@
     <string name="search_requests_title">Available to request</string>
     <!-- Android TV: search chip that hides library results and shows only the request row. -->
     <string name="search_requestsOnlyChip">Request</string>
+    <!-- Search status line when a filter is active. %1$s is the filter hint, %2$s the result count. -->
+    <string name="search_filterStatus">%1$s · %2$s</string>
+    <string name="search_filterOnlyMovies">Showing only movies</string>
+    <string name="search_filterOnlySeries">Showing only series</string>
+    <string name="search_filterOnlyAudiobooks">Showing only audiobooks</string>
+    <string name="search_filterOnlyRequests">Available to request</string>
     <!-- Number of search results, shown above the results. {count}: the number of results. -->
     <plurals name="search_result">
         <item quantity="one">%1$d result</item>

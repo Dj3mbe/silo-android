@@ -710,14 +710,20 @@ fun TvSearchScreen(
                     availableMediaTypes = state.availableMediaTypes,
                     requestsOnly = requestsOnly,
                     onRequestsOnlyChanged = { requestsOnly = it },
-                    resultStatus = searchStatusText(
+                    resultStatus = searchFilterStatus(
                         query = state.query,
-                        total = state.total,
-                        isSearching = state.isLoading,
-                        error = state.error,
-                        isPartialCount = state.mediaType == TvSearchMediaType.All && state.hasMore,
-                        isEstimatedCount = !state.totalExact,
-                        hasPeople = state.people.isNotEmpty(),
+                        mediaType = state.mediaType,
+                        requestsOnly = requestsOnly,
+                        requestCount = visibleRequestResults.size,
+                        libraryStatus = searchStatusText(
+                            query = state.query,
+                            total = state.total,
+                            isSearching = state.isLoading,
+                            error = state.error,
+                            isPartialCount = state.mediaType == TvSearchMediaType.All && state.hasMore,
+                            isEstimatedCount = !state.totalExact,
+                            hasPeople = state.people.isNotEmpty(),
+                        ),
                     ),
                     hasContentFocusTarget = hasContentFocusTarget,
                     searchFieldFocusRequester = activeSearchFieldFocusRequester,
@@ -1449,6 +1455,37 @@ private fun availableMediaDescription(mediaTypes: List<TvSearchMediaType>): Int 
 }
 
 @Composable
+/**
+ * The line under the filter chips: what the active filter shows, then the
+ * count for it. Requests-only counts request results, not library results.
+ */
+@Composable
+private fun searchFilterStatus(
+    query: String,
+    mediaType: TvSearchMediaType,
+    requestsOnly: Boolean,
+    requestCount: Int,
+    libraryStatus: String?,
+): String? {
+    val hint = when {
+        requestsOnly -> stringResource(CommonR.string.search_filterOnlyRequests)
+        mediaType == TvSearchMediaType.Movies -> stringResource(CommonR.string.search_filterOnlyMovies)
+        mediaType == TvSearchMediaType.Series -> stringResource(CommonR.string.search_filterOnlySeries)
+        mediaType == TvSearchMediaType.Audiobooks -> stringResource(CommonR.string.search_filterOnlyAudiobooks)
+        else -> null
+    }
+    val count = when {
+        !requestsOnly -> libraryStatus
+        query.isBlank() -> null
+        else -> pluralStringResource(CommonR.plurals.search_result, requestCount, requestCount)
+    }
+    return when {
+        hint == null -> count
+        count == null -> hint
+        else -> stringResource(CommonR.string.search_filterStatus, hint, count)
+    }
+}
+
 private fun searchStatusText(
     query: String,
     total: Int,
