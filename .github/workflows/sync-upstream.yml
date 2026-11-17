@@ -57,7 +57,7 @@ jobs:
             if [ -n "$HOOK" ]; then
               curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
             fi
-            exit 0
+            exit 1
           fi
 
           SUBJECT="chore: merge upstream main"
@@ -73,7 +73,7 @@ jobs:
             if [ -n "$HOOK" ]; then
               curl -sS -H "Content-Type: application/json" -d "$(jq -n --arg c "$MSG" '{content:$c}')" "$HOOK"
             fi
-            exit 0
+            exit 1
           fi
 
           # BK replaces Silo's TV logo and setup mark with PNGs of the same names. Upstream
