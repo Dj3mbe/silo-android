@@ -197,7 +197,7 @@ fun TvSearchScreen(
     val firstFilterChipFocusRequester = remember { FocusRequester() }
     val internalSearchFieldFocusRequester = remember { FocusRequester() }
     val searchGridState = rememberLazyGridState()
-    // The "To request" chip: hides library results so only the request row shows.
+    // The Request chip: hides library results so only the request row shows.
     var requestsOnly by rememberSaveable { mutableStateOf(false) }
     // The "People" chip: off by default, shows the people row when on.
     var showPeople by rememberSaveable { mutableStateOf(false) }
@@ -1078,6 +1078,11 @@ private fun SearchStage(
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val mediaTypes = availableMediaTypes
+    val chipPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp)
+    val chipTextStyle = MaterialTheme.typography.labelMedium.copy(
+        fontSize = 14.sp,
+        lineHeight = 18.sp,
+    )
     val fieldShape = RoundedCornerShape(14.dp)
     val clearButtonFocusRequester = remember { FocusRequester() }
     val voiceButtonFocusRequester = remember { FocusRequester() }
@@ -1325,11 +1330,8 @@ private fun SearchStage(
                         onMediaTypeChanged(type)
                     },
                     modifier = chipModifier,
-                    contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
-                    textStyle = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp,
-                    ),
+                    contentPadding = chipPadding,
+                    textStyle = chipTextStyle,
                 )
             }
             item(contentType = "requests-only-chip") {
@@ -1346,11 +1348,8 @@ private fun SearchStage(
                         up = searchFieldFocusRequester
                         if (hasContentFocusTarget) down = firstContentFocusRequester
                     },
-                    contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
-                    textStyle = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp,
-                    ),
+                    contentPadding = chipPadding,
+                    textStyle = chipTextStyle,
                 )
             }
             item(contentType = "people-chip") {
@@ -1371,11 +1370,8 @@ private fun SearchStage(
                         up = searchFieldFocusRequester
                         if (hasContentFocusTarget) down = firstContentFocusRequester
                     },
-                    contentPadding = PaddingValues(horizontal = 22.dp, vertical = 8.dp),
-                    textStyle = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp,
-                    ),
+                    contentPadding = chipPadding,
+                    textStyle = chipTextStyle,
                 )
             }
         }
