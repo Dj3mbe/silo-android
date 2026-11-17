@@ -1,6 +1,7 @@
 package org.siloserver.silo.android.ui.screens.libraries
 
 import org.siloserver.silo.android.ui.components.PosterArtworkAspectRatio
+import org.siloserver.silo.android.ui.components.CollectionPosterCard
 import org.siloserver.silo.model.navigation.isAudiobookLikeLibraryType
 import org.siloserver.silo.common.i18n.LocaleFormat
 import org.siloserver.silo.common.i18n.UiText
@@ -65,12 +66,16 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -111,7 +116,14 @@ import org.siloserver.silo.android.ui.components.TopBarRowTopInset
 import org.siloserver.silo.android.ui.theme.siloPageBackdrop
 import org.siloserver.silo.android.ui.components.EmptyStateView
 import org.siloserver.silo.android.ui.components.ErrorView
+import org.siloserver.silo.android.ui.navigation.LocalBottomChromeHeight
 import org.siloserver.silo.android.ui.navigation.LocalBottomChromeInset
+import org.siloserver.silo.android.ui.navigation.LocalBottomNavPageMovedItself
+import org.siloserver.silo.android.ui.navigation.LocalBottomNavScrolledToTop
+import org.siloserver.silo.android.ui.navigation.ReportBottomNavPageTop
+import org.siloserver.silo.android.ui.navigation.LocalPageDockHost
+import org.siloserver.silo.android.ui.navigation.OfferPageDock
+import org.siloserver.silo.android.ui.navigation.rememberNonShrinking
 import org.siloserver.silo.android.ui.components.MediaGridDefaults
 import org.siloserver.silo.android.ui.components.MediaRowsSkeleton
 import org.siloserver.silo.android.ui.components.PosterGridSkeleton
@@ -163,6 +175,7 @@ import org.siloserver.silo.model.personal.UserLibrary
 import org.siloserver.silo.model.profile.Profile
 import org.siloserver.silo.model.section.LibraryCollection
 import org.siloserver.silo.model.section.ResolvedSection
+import org.siloserver.silo.model.section.SectionCollectionCard
 import org.siloserver.silo.network.ApiResult
 import org.siloserver.silo.network.apiv2.CatalogContinuationV2
 import org.siloserver.silo.repository.CatalogRepository
@@ -789,7 +802,7 @@ class LibrariesViewModel(
                         if (isRecommendedRequestCurrent(requestGeneration, libraryId, it)) {
                             it.copy(
                                 isLoadingSections = false,
-                                sections = scoped.map { it.section }.filter { it.items.isNotEmpty() },
+                                sections = scoped.map { it.section }.filter { it.hasCards },
                                 sectionsError = if (scoped.any { it.incomplete }) {
                                     UiText.Res(CommonR.string.library_error_someShelves)
                                 } else {
@@ -1126,6 +1139,8 @@ class LibrariesViewModel(
 fun LibrariesScreen(
     onItemClick: (String, Int?) -> Unit,
     onCollectionClick: (LibraryCollection, Int, String?) -> Unit,
+    /** Opens a personal collection by id, from a Recommended row of collections. */
+    onPersonalCollectionClick: ((String) -> Unit)? = null,
     /** Opens a Recommended row's full page: the row, its library, and the Movies/Series scope. */
     onExploreSection: ((ResolvedSection, Int, String?) -> Unit)? = null,
     viewModel: LibrariesViewModel,
@@ -1205,13 +1220,24 @@ fun LibrariesScreen(
         browseGridState.requestScrollToItem(0)
     }
     val pageScope = rememberCoroutineScope()
+    // The browse grid reports its own top (CatalogGrid).
+    ReportBottomNavPageTop(recommendedListState)
+    ReportBottomNavPageTop(collectionsGridState)
+    val bottomNavScrolledToTop = LocalBottomNavScrolledToTop.current
+    val bottomNavPageMovedItself = LocalBottomNavPageMovedItself.current
+    val latestSelectedTab by rememberUpdatedState(state.selectedTab)
     val scrollPageToTop: (LibrariesSubtab) -> Unit = { tab ->
+        bottomNavPageMovedItself()
         pageScope.launch {
             when (tab) {
                 LibrariesSubtab.Recommended -> recommendedListState.animateScrollToItem(0)
                 LibrariesSubtab.Browse -> browseGridState.animateScrollToItem(0)
                 LibrariesSubtab.Collections -> collectionsGridState.animateScrollToItem(0)
             }
+            // Arriving at the top expands a minimized tab bar, as a user
+            // scroll would. An interrupted scroll never gets here, and a
+            // page left mid-scroll no longer speaks for the tab.
+            if (latestSelectedTab == tab) bottomNavScrolledToTop()
         }
     }
     val density = LocalDensity.current
@@ -1249,9 +1275,46 @@ fun LibrariesScreen(
         // dock above the nav pill (iOS #1137); wider windows keep the chip
         // row and the selector sheet, as iPad does.
         val showsDock = maxWidth < LibraryDockMaxWindowWidth && selectedLibrary != null
+        // The dock lives in the tab bar's accessory slot (iOS 26.1), resting
+        // above the expanded bar and moving inline beside the minimized
+        // control, so the bar's measured height (and with it the inset below)
+        // already includes it. While Remote Control or the audiobook holds the
+        // slot, the dock floats in the page instead, riding the chrome's live
+        // edge, and the page adds its footprint to the inset.
+        val dockHost = LocalPageDockHost.current
+        val dockFloats = showsDock && (dockHost == null || dockHost.nowPlayingHoldsSlot)
+        if (showsDock && dockHost != null) {
+            OfferPageDock(dockHost) { inline ->
+                LibraryDockContent(
+                    style = if (inline) LibraryDockStyle.Inline else LibraryDockStyle.Accessory,
+                    library = selectedLibrary,
+                    libraries = state.libraries,
+                    tabs = state.dockTabs,
+                    selectedTab = state.selectedTab,
+                    onSelect = viewModel::selectTab,
+                    onReselect = scrollPageToTop,
+                    onPickLibrary = viewModel::selectLibrary,
+                    modifier = if (inline) Modifier.fillMaxSize() else Modifier,
+                )
+            }
+        }
         val navChromeInset = LocalBottomChromeInset.current
+        // Read at placement only: it changes every frame while the bar moves.
+        val navChromeHeight = LocalBottomChromeHeight.current
+        // Never shrinks while the page is up, so a list resting at its end
+        // stays put when the dock moves from floating into the tab bar (an
+        // audiobook ending), as the shell's inset does for the bar itself. A
+        // new window size starts over, as the shell's does.
+        val configuration = LocalConfiguration.current
+        val pageBottomInset by rememberNonShrinking(
+            showsDock,
+            configuration.screenWidthDp,
+            configuration.screenHeightDp,
+        ) {
+            navChromeInset + if (dockFloats) LibraryDockFootprint else 0.dp
+        }
         CompositionLocalProvider(
-            LocalBottomChromeInset provides navChromeInset + if (showsDock) LibraryDockFootprint else 0.dp,
+            LocalBottomChromeInset provides pageBottomInset,
         ) {
         LibraryContentViewport(
             modifier = Modifier
@@ -1300,6 +1363,21 @@ fun LibrariesScreen(
                             onExploreSection = state.selectedLibraryId?.let { libraryId ->
                                 onExploreSection?.let { open -> { section -> open(section, libraryId, state.mediaScope) } }
                             },
+                            // A server collection opens in this library and scope,
+                            // as the Collections tab opens it. A personal one opens
+                            // as the Collections screen does, except in a Movies- or
+                            // Series-scoped view, where it keeps that scope (as on TV).
+                            onCollectionClick = { card ->
+                                val libraryId = state.selectedLibraryId
+                                when {
+                                    card.isUserCollection && state.mediaScope == null ->
+                                        onPersonalCollectionClick?.invoke(card.id)
+                                    libraryId != null ->
+                                        onCollectionClick(card.toLibraryCollection(), libraryId, state.mediaScope)
+                                    card.isUserCollection -> onPersonalCollectionClick?.invoke(card.id)
+                                }
+                            },
+                            activeProfileId = activeProfile?.id,
                         )
                     }
                     state.selectedTab == LibrariesSubtab.Browse -> {
@@ -1368,7 +1446,7 @@ fun LibrariesScreen(
             modifier = Modifier.onSizeChanged { chromeHeightPx = it.height },
         )
 
-        if (showsDock) {
+        if (dockFloats) {
             LibraryDock(
                 library = selectedLibrary,
                 libraries = state.libraries,
@@ -1379,7 +1457,7 @@ fun LibrariesScreen(
                 onPickLibrary = viewModel::selectLibrary,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = navChromeInset + LibraryDockBottomGap),
+                    .offset { IntOffset(0, -(navChromeHeight() + LibraryDockBottomGap).roundToPx()) },
             )
         }
     }
@@ -1404,6 +1482,8 @@ private fun RecommendedTabContent(
     onItemClick: (String) -> Unit,
     onRetry: () -> Unit,
     onExploreSection: ((ResolvedSection) -> Unit)? = null,
+    onCollectionClick: ((SectionCollectionCard) -> Unit)? = null,
+    activeProfileId: String? = null,
 ) {
     val diagnosticsListSnapshot = remember(state.sections) {
         DiagnosticsListSnapshot.fromKeys(
@@ -1473,6 +1553,9 @@ private fun RecommendedTabContent(
                         section = section,
                         onItemClick = onItemClick,
                         onExploreAllClick = onExploreSection?.let { open -> { open(section) } },
+                        onCollectionClick = onCollectionClick,
+                        activeProfileId = activeProfileId,
+                        showCollectionCounts = state.mediaScope == null,
                     )
                 }
 
@@ -1753,7 +1836,7 @@ private fun CollectionsTabContent(
                     key = { it.id },
                     contentType = { "library-collection" },
                 ) { collection ->
-                    InlineLibraryCollectionCard(
+                    CollectionPosterCard(
                         collection = collection,
                         showItemCount = state.mediaScope == null,
                         onClick = { onCollectionClick(collection) },
@@ -1762,65 +1845,6 @@ private fun CollectionsTabContent(
             }
             }
         }
-    }
-}
-
-@Composable
-private fun InlineLibraryCollectionCard(
-    collection: LibraryCollection,
-    showItemCount: Boolean,
-    onClick: () -> Unit,
-) {
-    // iOS `LibraryCollectionCard`: VStack(spacing: 6) of a 2:3.3 poster
-    // (smallCornerRadius = 6) carrying a bottom-trailing count badge, a
-    // siloCaption (12) name (2 lines), and a siloSmall (11) secondary
-    // type label; the count badge rides the artwork.
-    Column(
-        modifier = Modifier.clickable(onClick = onClick),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f))
-                .aspectRatio(2f / 3.3f),
-        ) {
-            ThumbhashImage(
-                url = collection.posterUrl,
-                thumbhash = collection.posterThumbhash,
-                contentDescription = collection.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-            if (showItemCount) Text(
-                text = collection.itemCount?.takeIf { it > 0 }?.let { LocaleFormat.groupedCount(it, currentNumberLocale()) } ?: stringResource(CommonR.string.collections_type_smart),
-                fontSize = 12.sp,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(Color.Black.copy(alpha = 0.65f))
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
-            )
-        }
-        Text(
-            text = collection.name,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = collection.itemCount?.takeIf { showItemCount }
-                ?.let { pluralStringResource(CommonR.plurals.collections_itemCount, it, it, LocaleFormat.groupedCount(it)) }
-                ?: stringResource(CommonR.string.collections_collection),
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
