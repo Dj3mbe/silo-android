@@ -198,7 +198,7 @@ fun TvSearchScreen(
     val internalSearchFieldFocusRequester = remember { FocusRequester() }
     val searchGridState = rememberLazyGridState()
     // The Request chip: hides library results so only the request row shows.
-    var requestsOnly by rememberSaveable { mutableStateOf(false) }
+    var requestsOnlySelected by rememberSaveable { mutableStateOf(false) }
     // The "People" chip: off by default, shows the people row when on.
     var showPeople by rememberSaveable { mutableStateOf(false) }
     val activeSearchFieldFocusRequester = searchFieldFocusRequester ?: internalSearchFieldFocusRequester
@@ -268,19 +268,25 @@ fun TvSearchScreen(
     // Same precedence as the post-search handoff below: people (the row
     // nearest the chips), results, then the error's "Try again", then the
     // request row.
+    // Request mode needs the server's requests on; a stale selection is ignored.
+    val requestsOnly = requestsOnlySelected && requestsEnabled
     val libraryItems = if (requestsOnly) emptyList() else state.items
-    val libraryPeople = if (requestsOnly || !showPeople) emptyList() else state.people
+    // With no titles to show, the people are the result, whatever the chip says.
+    val peopleOnlyMatch = state.items.isEmpty() && !state.isLoading
+    val libraryPeople = if (!requestsOnly && (showPeople || peopleOnlyMatch)) state.people else emptyList()
+    // Request mode does not draw the library error, so nothing may aim at it.
+    val showsLibraryError = state.error != null && !requestsOnly
     val firstContentFocusRequester = when {
         libraryPeople.isNotEmpty() -> firstPersonFocusRequester
         libraryItems.isNotEmpty() -> firstResultFocusRequester
-        state.error != null -> feedbackActionFocusRequester
+        showsLibraryError -> feedbackActionFocusRequester
         visibleRequestResults.isNotEmpty() -> firstRequestResultFocusRequester
         else -> firstFilterChipFocusRequester
     }
     val hasContentFocusTarget = libraryItems.isNotEmpty() ||
         libraryPeople.isNotEmpty() ||
         visibleRequestResults.isNotEmpty() ||
-        state.error != null
+        showsLibraryError
 
     // Submitting hands focus to the results and searches requests alongside
     // the library. Typed and spoken queries both come through here.
@@ -609,14 +615,14 @@ fun TvSearchScreen(
         val postSearchTarget = when {
             libraryPeople.isNotEmpty() -> firstPersonFocusRequester
             libraryItems.isNotEmpty() -> firstResultFocusRequester
-            state.error != null -> feedbackActionFocusRequester
+            showsLibraryError -> feedbackActionFocusRequester
             visibleRequestResults.isNotEmpty() -> firstRequestResultFocusRequester
             else -> firstFilterChipFocusRequester
         }
         val postSearchRegion = when {
             libraryPeople.isNotEmpty() -> TvSearchFocusRegion.People
             libraryItems.isNotEmpty() -> TvSearchFocusRegion.CatalogResults
-            state.error != null -> TvSearchFocusRegion.Feedback
+            showsLibraryError -> TvSearchFocusRegion.Feedback
             visibleRequestResults.isNotEmpty() -> TvSearchFocusRegion.RequestResults
             else -> TvSearchFocusRegion.Chips
         }
@@ -713,15 +719,17 @@ fun TvSearchScreen(
                     mediaType = state.mediaType,
                     availableMediaTypes = state.availableMediaTypes,
                     requestsOnly = requestsOnly,
-                    onRequestsOnlyChanged = { requestsOnly = it },
+                    onRequestsOnlyChanged = { requestsOnlySelected = it },
+                    requestsAvailable = requestsEnabled,
                     showPeople = showPeople,
                     onShowPeopleChanged = { showPeople = it },
-                    hasPeople = state.people.isNotEmpty(),
+                    showPeopleRow = libraryPeople.isNotEmpty(),
                     resultStatus = searchFilterStatus(
                         query = state.query,
                         mediaType = state.mediaType,
                         requestsOnly = requestsOnly,
                         requestCount = visibleRequestResults.size,
+                        requestsLoading = requestState.isLoading,
                         libraryStatus = searchStatusText(
                             query = state.query,
                             total = state.total,
@@ -786,7 +794,7 @@ fun TvSearchScreen(
                                 up = firstFilterChipFocusRequester
                                 when {
                                     libraryItems.isNotEmpty() -> Unit
-                                    state.error != null -> down = feedbackActionFocusRequester
+                                    showsLibraryError -> down = feedbackActionFocusRequester
                                     visibleRequestResults.isNotEmpty() -> down = firstRequestResultFocusRequester
                                 }
                             },
@@ -864,7 +872,7 @@ fun TvSearchScreen(
                     cardModifier = Modifier.focusProperties {
                         when {
                             libraryItems.isNotEmpty() -> Unit
-                            state.error != null -> up = feedbackActionFocusRequester
+                            showsLibraryError -> up = feedbackActionFocusRequester
                             libraryPeople.isNotEmpty() -> up = firstPersonFocusRequester
                             else -> up = firstFilterChipFocusRequester
                         }
@@ -1056,9 +1064,10 @@ private fun SearchStage(
     availableMediaTypes: List<TvSearchMediaType>,
     requestsOnly: Boolean,
     onRequestsOnlyChanged: (Boolean) -> Unit,
+    requestsAvailable: Boolean,
     showPeople: Boolean,
     onShowPeopleChanged: (Boolean) -> Unit,
-    hasPeople: Boolean,
+    showPeopleRow: Boolean,
     resultStatus: String?,
     hasContentFocusTarget: Boolean,
     searchFieldFocusRequester: FocusRequester,
@@ -1334,7 +1343,7 @@ private fun SearchStage(
                     textStyle = chipTextStyle,
                 )
             }
-            item(contentType = "requests-only-chip") {
+            if (requestsAvailable) item(contentType = "requests-only-chip") {
                 TvFilterChip(
                     text = stringResource(CommonR.string.search_requestsOnlyChip),
                     selected = requestsOnly,
@@ -1386,7 +1395,7 @@ private fun SearchStage(
         )
 
         // Not emitted when hidden or empty: an empty slot still gets the column's gap.
-        if (showPeople && !requestsOnly && hasPeople) peopleRow()
+        if (showPeopleRow) peopleRow()
     }
 }
 
@@ -1502,6 +1511,7 @@ private fun searchFilterStatus(
     mediaType: TvSearchMediaType,
     requestsOnly: Boolean,
     requestCount: Int,
+    requestsLoading: Boolean,
     libraryStatus: String?,
 ): String? {
     val hint = when {
@@ -1514,6 +1524,7 @@ private fun searchFilterStatus(
     val count = when {
         !requestsOnly -> libraryStatus
         query.isBlank() -> null
+        requestsLoading -> stringResource(CommonR.string.search_searching)
         else -> pluralStringResource(CommonR.plurals.search_result, requestCount, requestCount)
     }
     return when {
