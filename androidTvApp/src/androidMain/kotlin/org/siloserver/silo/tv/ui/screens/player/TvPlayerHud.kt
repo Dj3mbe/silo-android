@@ -119,6 +119,8 @@ import org.siloserver.silo.common.player.PlayerStatsSnapshot
 import org.siloserver.silo.common.player.SleepTimerState
 import org.siloserver.silo.domain.player.IntroSkipMode
 import org.siloserver.silo.model.settings.QualityChoices
+import org.siloserver.silo.model.catalog.EpisodeLabel
+import org.siloserver.silo.model.catalog.EpisodeCodeStyle
 import org.siloserver.silo.model.catalog.VersionChapter
 import org.siloserver.silo.model.playback.PLAYBACK_QUALITY_AUTO
 import org.siloserver.silo.model.playback.PlaybackExecutionPlan
