@@ -296,6 +296,7 @@ fun SeriesDetailContent(
                 selectsCenteredEpisode = !showsEpisodeDetails,
                 allowsSeasonPaging = false,
                 tapToFocusEpisode = showsEpisodeDetails,
+                episodeLabels = detail.episodeLabels,
             )
         }
     }
@@ -363,7 +364,7 @@ fun SeriesDetailContent(
             ) {
                 HeroActionStack(
                     primaryLabel = selectedEpisode?.let {
-                        stringResource(CommonR.string.detail_playEpisodeCode, episodeNumberText(resources, it))
+                        stringResource(CommonR.string.detail_playEpisodeCode, episodeNumberText(resources, it, detail.episodeLabels))
                     } ?: computePlayLabel(resources, detail, nextEpisodeLabel),
                     onPlay = onPlayClick,
                     onPlayFromBeginning = onPlayFromBeginning,

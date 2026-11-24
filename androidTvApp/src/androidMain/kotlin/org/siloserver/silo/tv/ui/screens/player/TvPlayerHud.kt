@@ -209,6 +209,9 @@ internal fun TvPlayerHud(
     durationSec: Double,
     seasonNumber: Int?,
     episodeNumber: Int?,
+    /** The series' `episode_labels`; "air_date" (sports) shows [airDate] in place of the numbers. */
+    episodeLabels: String? = null,
+    airDate: String? = null,
     audioTracks: List<PlayerTrackEntry>,
     videoQualities: List<VideoQualityOption>,
     /** The session's quality preference, named when no row is lit. */
@@ -568,6 +571,8 @@ internal fun TvPlayerHud(
                         durationSec = durationSec,
                         seasonNumber = seasonNumber,
                         episodeNumber = episodeNumber,
+                        episodeLabels = episodeLabels,
+                        airDate = airDate,
                         stats = stats,
                         playbackPlan = playbackPlan,
                         subtitleLabel = subtitlePresentation.rows
@@ -864,13 +869,16 @@ private fun HudInfoPane(
     durationSec: Double,
     seasonNumber: Int?,
     episodeNumber: Int?,
+    /** The series' `episode_labels`; "air_date" (sports) shows [airDate] in place of the numbers. */
+    episodeLabels: String? = null,
+    airDate: String? = null,
     stats: PlayerStatsSnapshot,
     playbackPlan: PlaybackExecutionPlan?,
     subtitleLabel: String,
     chapters: List<VersionChapter>,
 ) {
     val episodeTag = if (seasonNumber != null && episodeNumber != null) {
-        stringResource(CommonR.string.catalog_episodeCaption, LocaleFormat.codeNumber(seasonNumber), LocaleFormat.codeNumber(episodeNumber))
+        EpisodeLabel.text(seasonNumber, episodeNumber, episodeLabels, airDate, EpisodeCodeStyle.Spaced).text()
     } else {
         null
     }
