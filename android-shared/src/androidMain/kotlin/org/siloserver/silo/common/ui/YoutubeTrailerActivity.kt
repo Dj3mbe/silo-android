@@ -321,7 +321,12 @@ class YoutubeTrailerActivity : Activity() {
                     fs: 0, iv_load_policy: 3, cc_load_policy: 0, origin: '$EMBED_ORIGIN'
                   },
                   events: {
-                    onReady: function (e) { SiloTrailer.onReady(); e.target.playVideo(); },
+                    onReady: function (e) {
+                      e.target.unloadModule('captions');
+                      e.target.unloadModule('cc');
+                      SiloTrailer.onReady();
+                      e.target.playVideo();
+                    },
                     onStateChange: function (e) {
                       if (e.data === YT.PlayerState.PLAYING) SiloTrailer.onPlaying();
                       if (e.data === YT.PlayerState.ENDED) SiloTrailer.onEnded();
