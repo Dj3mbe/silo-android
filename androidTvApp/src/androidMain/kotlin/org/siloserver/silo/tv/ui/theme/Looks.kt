@@ -23,9 +23,9 @@ class TvThemeLook(
 /** The looks offered at the top of the Theme Colors panel. */
 object TvThemeLooks {
     val all: List<TvThemeLook> = listOf(
+        TvThemeLook("Xmas", AccentPreset.Mint, AccentPreset.FireRed),
         TvThemeLook("Gold", AccentPreset.Gold),
         TvThemeLook("Fire", AccentPreset.FireRed),
-        TvThemeLook("Grey & Gold", AccentPreset.Gold, AccentPreset.Graphite),
         TvThemeLook("Ocean", AccentPreset.Ocean),
         TvThemeLook("Mint", AccentPreset.Mint),
         TvThemeLook("Violet", AccentPreset.Purple),
