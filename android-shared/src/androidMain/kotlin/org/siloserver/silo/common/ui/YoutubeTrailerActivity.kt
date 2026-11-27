@@ -323,7 +323,7 @@ class YoutubeTrailerActivity : Activity() {
                   events: {
                     onReady: function (e) { SiloTrailer.onReady(); e.target.playVideo(); },
                     onStateChange: function (e) {
-                      if (e.data === YT.PlayerState.PLAYING) SiloTrailer.onPlaying();
+                      if (e.data === YT.PlayerState.PLAYING) { e.target.setOption('captions', 'track', {}); SiloTrailer.onPlaying(); }
                       if (e.data === YT.PlayerState.ENDED) SiloTrailer.onEnded();
                     },
                     onError: function () { SiloTrailer.onError(); }
