@@ -318,7 +318,7 @@ class YoutubeTrailerActivity : Activity() {
                   height: '100%',
                   playerVars: {
                     autoplay: 1, controls: 1, rel: 0, playsinline: 1,
-                    fs: 0, iv_load_policy: 3, cc_load_policy: 0, origin: '$EMBED_ORIGIN'
+                    fs: 0, iv_load_policy: 3, origin: '$EMBED_ORIGIN'
                   },
                   events: {
                     onReady: function (e) { SiloTrailer.onReady(); e.target.playVideo(); },
